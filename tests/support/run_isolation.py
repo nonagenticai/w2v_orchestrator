@@ -27,7 +27,7 @@ be narrowed to *this run's own* backends (see ``terminate_scope_sql``).
 
 Why ``PGOPTIONS`` and not ``DATABASE_URL?options=-csearch_path%3D...``
 ---------------------------------------------------------------------
-This estate already burned that path. gitops-production
+This estate already burned that path. the fleet deployment configuration
 ``79f59692e`` ("fix(archetype): pass schema search_path via PGOPTIONS env, not
 URL options") reverted URL-encoded options because alembic's ``env.py`` and
 every ``BaseSettings`` consumer read ``DATABASE_URL`` through ``ConfigParser``,
@@ -53,7 +53,7 @@ Why schema-per-run and not database-per-run
 
 CI is deliberately NOT isolated
 -------------------------------
-CI gets a per-job EPHEMERAL postgres sidecar (gitops-production
+CI gets a per-job EPHEMERAL postgres sidecar (the fleet deployment configuration
 ``python-service.yml``; ``postgres_isolation`` is documented there as a no-op
 today), so there is exactly one run against a private database — isolation buys
 nothing and any divergence would be pure risk. ``isolation_enabled()`` returns

@@ -232,7 +232,7 @@ class RedisSettings(BaseRedisSettings):
     """
 
     # url is required (no localhost fallback) — REDIS_URL set via Secret in
-    # gitops-production/clusters/strato/services/w2v/deployments.yaml.
+    # the deployment manifests
 
     # The shared base defaults max_connections=10, which is far too small for
     # THIS service: every live SSE stream (GET /api/runs/{id}/events) holds one
@@ -401,7 +401,7 @@ class StorageSettings(BaseStorageSettings):
     """Storage settings with w2v_orchestrator defaults."""
 
     # minio_endpoint is required (no localhost fallback) — STORAGE_MINIO_ENDPOINT
-    # set via per-service ConfigMap envFrom in gitops-production.
+    # set via per-service ConfigMap envFrom in the fleet deployment configuration.
     minio_bucket: str = Field(default="w2v-orchestrator", description="MinIO bucket name")
     # Kept at the base 3600s (1h) default — deliberately. Browser-facing presigns
     # (uploads_video original_url, storyboard panel thumbnails, the final-artifact

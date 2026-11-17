@@ -87,6 +87,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # ffmpeg is a runtime tool for the media services (audio premaster, uploads,
+      # frame QA); the ubuntu-latest image does not ship it. Measured 2026-11-17 on
+      # w2v_orchestrator's second public run: 26 tests failed with "ffmpeg not found
+      # on PATH" while the same suite was green on a dev box that has it installed.
+      - name: install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: start Postgres 18
         run: |
           set -euo pipefail

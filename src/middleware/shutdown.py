@@ -24,7 +24,7 @@ It is kept, not deleted, because it is CORRECT and becomes live the moment the
 flag is set EARLIER than the lifespan — which is a deployment change, not a code
 change: a k8s ``preStop`` hook (or a SIGTERM handler) that flips the flag before
 uvicorn begins its drain, so the pod sheds writes while the endpoints controller
-removes it from the Service. That hook lives in ``gitops-production``, not this
+removes it from the Service. That hook lives in the fleet deployment configuration, not this
 repo. Until it exists, do NOT read a green deploy as evidence that this drain
 behaviour was exercised — nothing exercises it but the unit tests, which set the
 flag by hand.

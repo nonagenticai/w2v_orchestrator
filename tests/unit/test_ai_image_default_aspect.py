@@ -51,7 +51,7 @@ def test_the_default_survives_the_live_device_cap_unchanged() -> None:
     reverted (2026-09-11).
 
     ``IMAGE_GEN_MAX_DIM=512`` is live on mini1, from the gitops ConfigMap
-    ``image-gen-backend-env`` (``gitops-production/clusters/strato/
+    ``image-gen-backend-env`` (``the deployment manifests
     external-services/image-gen-backend.yaml:76``). ``flux_service._aspect_clamp``
     scales the LONG edge down to it, so a larger request is RESHAPED, not honoured:
     896x512 comes back 512x293 — 150016 px against today's 163840, a net LOSS of

@@ -53,7 +53,7 @@ _POLL_TIMEOUT_SECONDS = 590.0
 # the outer stage Timeout in blueprints/website_review.py would make the raise
 # inert regardless.
 _WAIT_RETRIES = 7
-# Mirror of html_render's REDESIGN_MAX_JOB_LIFETIME_SECONDS (gitops-production
+# Mirror of html_render's REDESIGN_MAX_JOB_LIFETIME_SECONDS (the fleet deployment configuration
 # clusters/strato/services/w2v/configmaps.yaml, html-render-service-config; being
 # raised 5400 -> 9000 in gitops PR #3319, which merges FIRST). Declared here so the
 # budget invariants are DERIVED assertions in

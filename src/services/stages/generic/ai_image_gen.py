@@ -86,7 +86,7 @@ _MIN_AUTHORED_BUDGET_S = 60.0
 # ⛔ DO NOT RAISE THIS LINE TO GET SHARPER STILLS. IT CANNOT WORK, AND IT MAKES
 # THEM WORSE. The real ceiling is NOT here — it is ``IMAGE_GEN_MAX_DIM=512``,
 # live on mini1, sourced from the gitops ConfigMap ``image-gen-backend-env``:
-#   gitops-production/clusters/strato/external-services/image-gen-backend.yaml:76
+#   the deployment manifests:76
 # ``flux_service._aspect_clamp`` scales the LONG edge down to that cap, so a
 # bigger ask is not honoured, it is RESHAPED. Worked example (this exact revert):
 # asking 896x512 comes back 512x293 — 150016 px against today's 163840, i.e. a

@@ -1,5 +1,5 @@
 # conveyor carries the fleet betterleaks rule set, so it can own its allowlist.
-# Rules are copied from the fleet config (gitops-production); only the block at the
+# Rules are copied from the fleet config (the fleet deployment configuration); only the block at the
 # end is repo-specific. A real credential is rotated, never allowlisted.
 
 # FLEET betterleaks config — used by every repo that does NOT carry its own
@@ -13,7 +13,7 @@
 #   * local — `scripts/hooks/install.sh` copies it to `<repo>/.git/betterleaks-fleet.toml`
 #           for the pre-commit / pre-push hooks.
 #
-# ⛔ This file is NOT used by gitops-production itself. Both the action and the
+# ⛔ This file is NOT used by the fleet deployment configuration itself. Both the action and the
 # hooks prefer a repo-local `.betterleaks.toml` when one exists, so this repo keeps
 # its own rules, its own allowlist and its own baseline. Do not "unify" them:
 # gitops has 33 adjudicated baseline entries that mean nothing anywhere else.
@@ -28,7 +28,7 @@
 #
 #   config                                        repos with >=1 finding
 #   ------------------------------------------    ----------------------
-#   gitops-production/.betterleaks.toml verbatim              30 / 72
+#   the fleet deployment configuration/.betterleaks.toml verbatim              30 / 72
 #   + the three deltas below                                8 / 72
 #
 # The 30/72 result is why the 2026-08-17 handoff recorded "propagating the rule
@@ -47,7 +47,7 @@
 # they contributed 12 hits total across 72 repos in 3 months.
 #
 # Losing it costs the "second net for keyword-adjacent shapes" that
-# .betterleaks.toml's comment describes. gitops-production keeps that net because
+# .betterleaks.toml's comment describes. the fleet deployment configuration keeps that net because
 # it has a baseline to absorb the noise; the fleet has none and would need 72.
 #
 # ── delta 2: generated / vendored artefacts are excluded ────────────────────
@@ -81,7 +81,7 @@ useDefault = true
 disabledRules = ["generic-api-key", "generic-credential-uri", "generic-password"]
 
 # ============================================================================
-# Custom rules — MUST stay identical to gitops-production/.betterleaks.toml.
+# Custom rules — MUST stay identical to the fleet deployment configuration/.betterleaks.toml.
 # tests/test-secret-scan-gate.py compares them field by field and fails on any
 # divergence, so a rule tightened in one file cannot silently rot in the other.
 # ============================================================================
@@ -136,7 +136,7 @@ description = "Nonagentic licences service token (secrets.token_urlsafe(32) = 43
 # only matches `KEYWORD <assign> "literal"`. A credential passed as an ARGUMENT
 # is invisible to all of them. Full derivation, the 200k-sample entropy
 # measurement behind 4.35, and the accepted residual misses are documented in
-# gitops-production/.betterleaks.toml — read that before changing anything here.
+# the fleet deployment configuration/.betterleaks.toml — read that before changing anything here.
 regex = '''(?:^|[^A-Za-z0-9_/+=-])([A-Za-z0-9_-]{43})(?:[^A-Za-z0-9_/+=-]|$)'''
 secretGroup = 1
 entropy = 4.35
@@ -221,7 +221,7 @@ regexes = [
   # meaningful, not an empty-table artifact).
   #
   # ⚠️ The 4.35 floor's "zero false positives" claim was calibrated on
-  # gitops-production ALONE, where the dated-filename ceiling measured 4.275.
+  # the fleet deployment configuration ALONE, where the dated-filename ceiling measured 4.275.
   # This is the first observed member of that predicted class exceeding it on
   # another repo. Expect more as the fleet config reaches more repos; the fix
   # is a targeted allowlist entry like this one, NOT raising the floor —
