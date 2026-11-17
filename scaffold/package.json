@@ -1,0 +1,16 @@
+{
+  "name": "w2v-demo-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generated Playwright demo scripts for video recording",
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "typescript": "^5.5.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "list": "npx playwright test --list --config=playwright.recording.config.ts",
+    "record": "npx playwright test --config=playwright.recording.config.ts",
+    "record:part": "npx playwright test --config=playwright.recording.config.ts"
+  }
+}

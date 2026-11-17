@@ -1,0 +1,55 @@
+{
+  "_doc": "PROOF scenario for the owner rule \"subtitles are never burned into the picture by default\" on the SILENT (captions-only) path. A demo_video whose brief sets `captions_only: true` and whose deliverable OMITS `captions_mode` (so it stores the default `none`). compile_stage.captions_mode() promotes `none` + captions_only to `overlay`, so the compiler must MUX a soft mov_text track (+ the captions.srt sidecar) and never burn text into the pixels. demo_video_narrate skips TTS on this path (narrate.py captions_only branch), so there is no narration clip to assert on. Authored `lines` (same TodoMVC target as demo_video_relief) keep the bdd generation path out of the bill; three ~15-20-word lines at the 3 words/s reading pace (shared/captions_only.py) give a ~20-25s film against the 25s order. The `expect_subtitles` gate reads: burned (derived captions_render from config_snapshot, the only retrievable source — the compile request itself is not persisted), soft_track (ffprobe subtitle streams of the DELIVERED master, delivered_artifact_url), srt_min_cues (GET /api/runs/{id}/captions.srt). Every one of them FAILS when unobserved, never defaults green.",
+  "project": {
+    "type": "demo_video",
+    "title": "e2e-demo-video-captions-only",
+    "brief": {
+      "target_url": "https://demo.playwright.dev/todomvc",
+      "captions_only": true,
+      "lines": [
+        {
+          "id": "clip-add",
+          "text": "Start by typing a task into the box at the top and press enter to add it to your list."
+        },
+        {
+          "id": "clip-complete",
+          "text": "Tick the circle beside any task to mark it as done and watch it move out of your way."
+        },
+        {
+          "id": "clip-filter",
+          "text": "Use the filters along the bottom to switch between all, active and completed tasks in one click."
+        }
+      ]
+    },
+    "voice": {
+      "descriptor": "clear, instructional, calm",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "deliverables": [
+      {
+        "name": "Demo video 16x9 captions only",
+        "format": "16x9",
+        "target_duration_seconds": 25
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "demo_video_compile",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "artifact_url"}
+      ]
+    }
+  ],
+  "expect_subtitles": {
+    "burned": false,
+    "soft_track": true,
+    "srt_min_cues": 1
+  }
+}

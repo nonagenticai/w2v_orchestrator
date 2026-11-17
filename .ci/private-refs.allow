@@ -1,0 +1,35 @@
+# Allowlist for scripts/ci/no-private-refs.sh — a security decision, not a convenience.
+#
+# One rule per line, `path/glob:pattern  # justification`. The glob matches the repo-relative
+# path; the pattern is an ERE matched against the whole `git grep` hit (`path:line:text`).
+# Blank lines and `#` comments are ignored. A justification is mandatory in review.
+#
+# ⛔ Do NOT add an entry to keep a real internal hostname, address or private repository path
+# in a public tree. Remove it instead. An entry is only for a string that *looks* private but
+# is not: a documented loopback example, a placeholder, or a term that collides with a rule.
+#
+# The guard and this file necessarily spell the patterns out; the guard excludes both from
+# its own scan. Everything else is scanned.
+#
+# No entries by default. An empty file that fails the build is the correct starting state.
+
+# ── the SSRF / private-range guard's own fixtures ──────────────────────────────────────
+# These files ARE the guard and its tests: the `.internal` names and CGNAT addresses below
+# are the values the guard must REJECT, and the tests assert that rejection. They name no
+# host of any deployment — generic placeholders (app.internal, 100.64.0.x) only, never an
+# estate host. Same reasoning as w2v_common's tests/test_net_safe_fetch.py allowlist.
+tests/services/stages/generic/test_site_capture.py:\.internal([^A-Za-z0-9_(]|$)
+tests/services/stages/generic/test_site_capture.py:100\.64\.
+tests/unit/test_ssrf_cgnat_guard.py:\.internal([^A-Za-z0-9_(]|$)
+tests/unit/test_ssrf_cgnat_guard.py:100\.64\.
+
+# ── the SSRF / private-range guard's own fixtures ──────────────────────────────────────
+# These files ARE the guard and its tests: the `.internal` names and CGNAT addresses below
+# are the values the guard must REJECT, and the tests assert that rejection. They name no
+# host of any deployment — generic placeholders (app.internal, 100.64.0.x) only. Same
+# reasoning as w2v_common's tests/test_net_safe_fetch.py allowlist.
+tests/services/stages/generic/test_site_capture.py:\.internal([^A-Za-z0-9_(]|$)
+tests/services/stages/generic/test_site_capture.py:100\.64\.
+tests/unit/test_ssrf_cgnat_guard.py:\.internal([^A-Za-z0-9_(]|$)
+tests/unit/test_ssrf_cgnat_guard.py:100\.64\.
+tests/services/test_visual_media.py:\.internal([^A-Za-z0-9_(]|$)

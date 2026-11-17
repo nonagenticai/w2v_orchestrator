@@ -1,0 +1,34 @@
+{
+  "_doc": "Direct artifact-score happy path: POST /api/brand/score-artifact with the license header returns 200 and a deterministic quality score. Exercises the full live chain AuthMiddleware -> fetch -> static seo/accessibility/performance scanners -> pure score aggregation. NO LLM and NO worker seeding are involved, so \u2014 unlike icp-contract \u2014 this is ungated and goes green as soon as analysis_service is deployed. Asserts stable keys (overall_score, category_scores, source) that are always set on a 200, so a passing scan never flakes on which findings happened to surface.",
+  "service_probe": {
+    "service": "analysis",
+    "method": "POST",
+    "path": "/api/brand/score-artifact",
+    "body": {
+      "url": "https://www.anthropic.com"
+    },
+    "auth": "license",
+    "expect_status_code": 200,
+    "expect_keys": [
+      "overall_score",
+      "category_scores",
+      "source"
+    ],
+    "checks": [
+      {
+        "type": "numeric_gte",
+        "path": "overall_score",
+        "value": 1
+      },
+      {
+        "type": "nonempty",
+        "path": "categories[]"
+      },
+      {
+        "type": "nonempty",
+        "path": "source"
+      }
+    ]
+  },
+  "_assertions": "CLOSED 2026-09-06 by the engine change in scripts/e2e_validate.py: run_service_probe now desugars `expect_keys` into STRICT `present` checks (0/0.0/False/[]/{}/\"\" all FAIL) and accepts a `checks` list evaluated by the same _eval_check used by expect_stage_assertions. The discriminating floors below are what make this probe fail on a response that fetched or scored nothing."
+}

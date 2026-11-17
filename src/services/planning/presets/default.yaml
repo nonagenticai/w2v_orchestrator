@@ -1,0 +1,15 @@
+# Documentation + override seam for the "default" planning preset.
+#
+# SOURCE OF TRUTH is `_BUILTIN_BASELINE` in ../presets.py. These YAML files
+# mirror those values so a future tenant/MinIO override layer has a documented
+# shape to read (see the SEAM note in `load_preset`). This slice does NOT parse
+# them — do not add a yaml dependency to satisfy them.
+name: default
+wpm: 150.0
+vo_lufs: -16.0
+mood_default: neutral
+voice_count: 2
+dialogue_enabled: true
+transition_style: cut
+card_templates: [title_bullets, value_prop, cta]
+checkpoint_mode: autopilot

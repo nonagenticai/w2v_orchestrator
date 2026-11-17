@@ -1,0 +1,11 @@
+{
+  "_doc": "Direct ICP auth negative: POST /api/brand/icp-from-url on analysis_service with NO license header must be rejected 401 by AuthMiddleware (the route is deliberately not exempt). Deterministic — no dependency on the live icp-analysis worker or an LLM call, so this scenario is the always-green guard that the endpoint is live and authenticated.",
+  "service_probe": {
+    "service": "analysis",
+    "method": "POST",
+    "path": "/api/brand/icp-from-url",
+    "body": { "url": "https://example.com" },
+    "auth": "none",
+    "expect_status_code": 401
+  }
+}

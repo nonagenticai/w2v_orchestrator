@@ -1,0 +1,36 @@
+{
+  "_doc": "Standalone growth_bundle product type (#377): create a growth_bundle project and run it. The single growth_bundle stage calls the live worker_management 'growth-bundle' worker (already seeded — it runs inside the promo/website_review blueprints) and emits outbound channel-copy snippets; there is no video pipeline. Asserts the run reaches `completed` and the growth_bundle stage produced non-empty snippet text. NOTE: `brief.generate_video` is deliberately UNSET so the stage's require_video gate passes (setting it false would skip the only stage); the deliverable `format` is a nominal '1x1' placeholder never consumed on this text-only path.",
+  "project": {
+    "type": "growth_bundle",
+    "title": "Anti-Churn 30-day playbook",
+    "brief": {
+      "angle": "growth",
+      "audience": "B2B SaaS founders",
+      "value_proposition": "Cut churn 20% in 30 days with these three moves.",
+      "call_to_action": "Get the playbook."
+    },
+    "voice": {
+      "descriptor": "confident, crisp, founder-to-founder"
+    },
+    "deliverables": [
+      {
+        "name": "channel copy",
+        "format": "1x1"
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "growth_bundle",
+      "status": "completed",
+      "checks": [
+        { "type": "nonempty", "path": "snippets[].text" }
+      ]
+    }
+  ]
+}

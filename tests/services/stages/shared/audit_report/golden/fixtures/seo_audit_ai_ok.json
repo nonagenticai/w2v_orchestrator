@@ -1,0 +1,1206 @@
+{
+  "overall_score": 95.4,
+  "grade": "A+",
+  "group_scores": {
+    "on_page": 100.0,
+    "technical": 100.0,
+    "content": 94.3,
+    "keyword": 83.5,
+    "schema": 94.3,
+    "eeat": 89.3,
+    "internal_linking": 100.0,
+    "snippet": 94.3,
+    "geo": 94.3
+  },
+  "groups": [
+    {
+      "group": "on_page",
+      "score": 100.0,
+      "weight": 0.22,
+      "count": 0,
+      "top_severity": "info"
+    },
+    {
+      "group": "technical",
+      "score": 100.0,
+      "weight": 0.18,
+      "count": 0,
+      "top_severity": "info"
+    },
+    {
+      "group": "content",
+      "score": 94.3,
+      "weight": 0.12,
+      "count": 1,
+      "top_severity": "low"
+    },
+    {
+      "group": "keyword",
+      "score": 83.5,
+      "weight": 0.1,
+      "count": 2,
+      "top_severity": "medium"
+    },
+    {
+      "group": "schema",
+      "score": 94.3,
+      "weight": 0.1,
+      "count": 1,
+      "top_severity": "low"
+    },
+    {
+      "group": "eeat",
+      "score": 89.3,
+      "weight": 0.1,
+      "count": 2,
+      "top_severity": "low"
+    },
+    {
+      "group": "internal_linking",
+      "score": 100.0,
+      "weight": 0.07,
+      "count": 0,
+      "top_severity": "info"
+    },
+    {
+      "group": "snippet",
+      "score": 94.3,
+      "weight": 0.06,
+      "count": 1,
+      "top_severity": "low"
+    },
+    {
+      "group": "geo",
+      "score": 94.3,
+      "weight": 0.05,
+      "count": 2,
+      "top_severity": "low"
+    },
+    {
+      "group": "performance",
+      "score": null,
+      "weight": 0.0,
+      "count": 0,
+      "top_severity": "info",
+      "measured": false,
+      "note": "performance: not measured — no Lighthouse/Core Web Vitals measurement on the audit path"
+    }
+  ],
+  "quick_wins": [
+    {
+      "check_id": "seo-keyword-missing-in-title",
+      "group": "keyword",
+      "title": "Primary keyword missing from the title tag",
+      "severity": "medium",
+      "priority": 0.7,
+      "rank": 1,
+      "evidence": "primary='ai'",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows primary='ai'.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      }
+    }
+  ],
+  "strategic": [
+    {
+      "check_id": "seo-content-hard-to-read",
+      "group": "content",
+      "title": "Content is fairly difficult to read",
+      "severity": "low",
+      "priority": 0.36,
+      "rank": 2,
+      "evidence": "Flesch Reading Ease 35",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows Flesch Reading Ease 35.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      }
+    },
+    {
+      "check_id": "seo-keyword-missing-in-h1",
+      "group": "keyword",
+      "title": "Primary keyword missing from the H1",
+      "severity": "low",
+      "priority": 0.3,
+      "rank": 5,
+      "evidence": "primary='ai'",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows primary='ai'.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      }
+    },
+    {
+      "check_id": "seo-snippet-no-concise-answer",
+      "group": "snippet",
+      "title": "Question headings lack a concise answer",
+      "severity": "low",
+      "priority": 0.18,
+      "rank": 7
+    },
+    {
+      "check_id": "seo-eeat-no-author",
+      "group": "eeat",
+      "title": "No author attribution",
+      "severity": "low",
+      "priority": 0.3,
+      "rank": 3
+    },
+    {
+      "check_id": "seo-eeat-no-date",
+      "group": "eeat",
+      "title": "No publish or update date",
+      "severity": "low",
+      "priority": 0.3,
+      "rank": 4
+    },
+    {
+      "check_id": "seo-schema-coverage-gap",
+      "group": "schema",
+      "title": "Missing recommended schema types: FAQPage, SoftwareApplication",
+      "severity": "low",
+      "priority": 0.3,
+      "rank": 6,
+      "evidence": "industry=saas present=['Organization', 'WebSite']",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows industry=saas present=['Organization', 'WebSite'].",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      }
+    },
+    {
+      "check_id": "seo-geo-no-author-entity",
+      "group": "geo",
+      "title": "Author is not a structured entity",
+      "severity": "low",
+      "priority": 0.15,
+      "rank": 8
+    },
+    {
+      "check_id": "seo-geo-no-llms-txt",
+      "group": "geo",
+      "title": "No llms.txt",
+      "severity": "info",
+      "priority": 0.0,
+      "rank": 9
+    }
+  ],
+  "source": "https://nonagentic.ai",
+  "llm_enriched": true,
+  "unmeasured_groups": [
+    "performance"
+  ],
+  "coverage": 1.0,
+  "projection": {
+    "baseline": 95.4,
+    "projected": 97.7,
+    "delta": 2.3,
+    "removed": [
+      "seo-keyword-missing-in-title",
+      "seo-content-hard-to-read",
+      "seo-eeat-no-author"
+    ]
+  },
+  "grounding": [
+    {
+      "check_id": "seo-keyword-missing-in-title",
+      "supported": true,
+      "evidence_ref": "quoted from the page"
+    },
+    {
+      "check_id": "seo-content-hard-to-read",
+      "supported": true,
+      "evidence_ref": "quoted from the page"
+    },
+    {
+      "check_id": "seo-keyword-missing-in-h1",
+      "supported": true,
+      "evidence_ref": "quoted from the page"
+    },
+    {
+      "check_id": "seo-schema-coverage-gap",
+      "supported": true,
+      "evidence_ref": "quoted from the page"
+    }
+  ],
+  "exec_summary": {
+    "summary": "The page scores below target; the top findings block conversion.",
+    "so_what": "Fixing the top three recovers the most points.",
+    "roadmap": []
+  },
+  "critique": {
+    "score": 81.0,
+    "generic_check_ids": [],
+    "ungrounded_check_ids": [],
+    "rerun_stages": []
+  },
+  "findings": [
+    {
+      "check_id": "seo-keyword-missing-in-title",
+      "title": "Primary keyword missing from the title tag",
+      "severity": "medium",
+      "description": "The page's dominant term ('ai') does not appear in the <title>. The title is the single strongest on-page relevance signal.",
+      "fix": "Work 'ai' naturally into the title tag.",
+      "effort": "low",
+      "evidence": "primary='ai'",
+      "selector": null,
+      "rank": 1,
+      "priority": 0.7,
+      "action_bucket": "quick_win",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows primary='ai'.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      },
+      "group": "keyword"
+    },
+    {
+      "check_id": "seo-content-hard-to-read",
+      "title": "Content is fairly difficult to read",
+      "severity": "low",
+      "description": "Flesch Reading Ease is 35 (fairly difficult). A broader reading level widens reach and improves engagement signals.",
+      "fix": "Simplify phrasing where possible; break up long sentences.",
+      "effort": "low",
+      "evidence": "Flesch Reading Ease 35",
+      "selector": null,
+      "rank": 2,
+      "priority": 0.36,
+      "action_bucket": "strategic",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows Flesch Reading Ease 35.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      },
+      "group": "content"
+    },
+    {
+      "check_id": "seo-eeat-no-author",
+      "title": "No author attribution",
+      "severity": "low",
+      "description": "The content has no author byline or author metadata. Named, credible authorship is central to Expertise and Authoritativeness.",
+      "fix": "Add a visible author byline and author metadata (schema Person).",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 3,
+      "priority": 0.3,
+      "action_bucket": "strategic",
+      "group": "eeat"
+    },
+    {
+      "check_id": "seo-eeat-no-date",
+      "title": "No publish or update date",
+      "severity": "low",
+      "description": "No publish/modify date was found in metadata or markup. Dates signal freshness and let search and AI engines judge currency.",
+      "fix": "Expose datePublished/dateModified via Article schema or a <time> element.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 4,
+      "priority": 0.3,
+      "action_bucket": "strategic",
+      "group": "eeat"
+    },
+    {
+      "check_id": "seo-keyword-missing-in-h1",
+      "title": "Primary keyword missing from the H1",
+      "severity": "low",
+      "description": "The dominant term ('ai') is absent from the <h1>. Aligning the H1 with the page's focus reinforces topical relevance.",
+      "fix": "Include 'ai' in the H1 where it reads naturally.",
+      "effort": "low",
+      "evidence": "primary='ai'",
+      "selector": null,
+      "rank": 5,
+      "priority": 0.3,
+      "action_bucket": "strategic",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows primary='ai'.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      },
+      "group": "keyword"
+    },
+    {
+      "check_id": "seo-schema-coverage-gap",
+      "title": "Missing recommended schema types: FAQPage, SoftwareApplication",
+      "severity": "low",
+      "description": "The recommended structured-data types for a saas site are not all present. Missing: FAQPage, SoftwareApplication. Richer schema improves rich-result and AI-citation eligibility.",
+      "fix": "Add JSON-LD for: FAQPage, SoftwareApplication.",
+      "effort": "low",
+      "evidence": "industry=saas present=['Organization', 'WebSite']",
+      "selector": null,
+      "rank": 6,
+      "priority": 0.3,
+      "action_bucket": "strategic",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows industry=saas present=['Organization', 'WebSite'].",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      },
+      "group": "schema"
+    },
+    {
+      "check_id": "seo-snippet-no-concise-answer",
+      "title": "Question headings lack a concise answer",
+      "severity": "low",
+      "description": "1 question heading(s) found, but none is immediately followed by a 40-60 word answer. Snippets are pulled from a tight direct answer right after the question.",
+      "fix": "Answer each question heading in a 40-60 word paragraph directly beneath it.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 7,
+      "priority": 0.18,
+      "action_bucket": "strategic",
+      "group": "snippet"
+    },
+    {
+      "check_id": "seo-geo-no-author-entity",
+      "title": "Author is not a structured entity",
+      "severity": "low",
+      "description": "Authorship is not expressed as a Person/Organization entity in structured data. AI answer engines weight an explicit author entity far more than a plain byline when deciding whether to cite a page.",
+      "fix": "Mark up the author as a Person entity (with sameAs/credentials) in JSON-LD.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 8,
+      "priority": 0.15,
+      "action_bucket": "strategic",
+      "group": "geo"
+    },
+    {
+      "check_id": "seo-geo-no-llms-txt",
+      "title": "No llms.txt",
+      "severity": "info",
+      "description": "No /llms.txt was found. It is not required for AI citation, but it offers a curated map of your key content to LLM tooling.",
+      "fix": "Consider publishing an /llms.txt summarising your key pages.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 9,
+      "priority": 0.0,
+      "action_bucket": "strategic",
+      "group": "geo"
+    }
+  ],
+  "checks": [
+    {
+      "check_id": "seo-missing-title",
+      "title": "Title tag present",
+      "status": "pass",
+      "measured": null,
+      "target": "a <title> tag",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-title-too-short",
+      "title": "Title not too short",
+      "status": "pass",
+      "measured": null,
+      "target": "50-60 characters",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-title-too-long",
+      "title": "Title not too long",
+      "status": "pass",
+      "measured": null,
+      "target": "50-60 characters",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-meta-description-missing",
+      "title": "Meta description present",
+      "status": "pass",
+      "measured": null,
+      "target": "a meta description",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-meta-description-too-short",
+      "title": "Meta description not too short",
+      "status": "pass",
+      "measured": null,
+      "target": "150-160 characters",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-meta-description-too-long",
+      "title": "Meta description not too long",
+      "status": "pass",
+      "measured": null,
+      "target": "150-160 characters",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-missing-h1",
+      "title": "H1 heading present",
+      "status": "pass",
+      "measured": null,
+      "target": "exactly one H1",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-multiple-h1",
+      "title": "Single H1 heading",
+      "status": "pass",
+      "measured": null,
+      "target": "exactly one H1",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-heading-hierarchy-skip",
+      "title": "Heading levels not skipped",
+      "status": "pass",
+      "measured": null,
+      "target": "no skipped levels",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-images-missing-alt",
+      "title": "Images have alt text",
+      "status": "pass",
+      "measured": null,
+      "target": "0 images without alt",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-keyword-alignment",
+      "title": "Title and H1 share keywords",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-duplicate-meta",
+      "title": "No duplicate meta tags",
+      "status": "pass",
+      "measured": null,
+      "target": "each meta name once",
+      "group": "on_page"
+    },
+    {
+      "check_id": "seo-canonical-missing",
+      "title": "Canonical link present",
+      "status": "pass",
+      "measured": null,
+      "target": "<link rel=\"canonical\">",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-canonical-protocol-mismatch",
+      "title": "Canonical uses the page protocol",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-internal-nofollow",
+      "title": "Internal links are followable",
+      "status": "pass",
+      "measured": null,
+      "target": "no rel=nofollow internally",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-url-underscores",
+      "title": "URL path has no underscores",
+      "status": "pass",
+      "measured": null,
+      "target": "hyphens, not underscores",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-url-query-params",
+      "title": "URL has few query parameters",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-url-depth",
+      "title": "URL path is shallow",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-meta-robots-noindex",
+      "title": "Page is not noindex",
+      "status": "pass",
+      "measured": null,
+      "target": "indexable",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-meta-robots-nofollow",
+      "title": "Page is not nofollow",
+      "status": "pass",
+      "measured": null,
+      "target": "links followable",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-favicon-missing",
+      "title": "Favicon present",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-hreflang-no-default",
+      "title": "hreflang has x-default",
+      "status": "pass",
+      "measured": null,
+      "target": "x-default when hreflang used",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-hreflang-invalid",
+      "title": "hreflang codes are valid",
+      "status": "pass",
+      "measured": null,
+      "target": "ISO 639-1 codes",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-hreflang-duplicate",
+      "title": "hreflang has no duplicates",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-robots-txt-missing",
+      "title": "robots.txt present",
+      "status": "pass",
+      "measured": null,
+      "target": "/robots.txt returns non-404",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-sitemap-missing",
+      "title": "sitemap.xml present",
+      "status": "pass",
+      "measured": null,
+      "target": "/sitemap.xml returns non-404",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-viewport-missing",
+      "title": "Viewport meta present",
+      "status": "pass",
+      "measured": null,
+      "target": "width=device-width",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-mobile-font-size",
+      "title": "Mobile font sizes readable",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-og-tags-missing",
+      "title": "Open Graph tags present",
+      "status": "pass",
+      "measured": null,
+      "target": "og:title/description/image",
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-twitter-card-missing",
+      "title": "Twitter card present",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-twitter-meta-incomplete",
+      "title": "Twitter card complete",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "technical"
+    },
+    {
+      "check_id": "seo-structured-data-missing",
+      "title": "Structured data present",
+      "status": "pass",
+      "measured": null,
+      "target": "JSON-LD",
+      "group": "schema"
+    },
+    {
+      "check_id": "seo-structured-data-no-type",
+      "title": "Structured data has @type",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "schema"
+    },
+    {
+      "check_id": "seo-structured-data-no-name",
+      "title": "Structured data has a name",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "schema"
+    },
+    {
+      "check_id": "seo-structured-data-invalid",
+      "title": "Structured data parses",
+      "status": "pass",
+      "measured": null,
+      "target": "valid JSON-LD",
+      "group": "schema"
+    },
+    {
+      "check_id": "seo-breadcrumb-missing",
+      "title": "Breadcrumb schema present",
+      "status": "pass",
+      "measured": null,
+      "target": "BreadcrumbList",
+      "group": "schema"
+    },
+    {
+      "check_id": "seo-schema-no-organization",
+      "title": "Organization schema present",
+      "status": "pass",
+      "measured": null,
+      "target": "Organization",
+      "group": "schema"
+    },
+    {
+      "check_id": "seo-schema-coverage-gap",
+      "title": "Recommended schema types present",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": null,
+      "group": "schema"
+    },
+    {
+      "check_id": "seo-content-very-thin",
+      "title": "Content is not very thin",
+      "status": "pass",
+      "measured": null,
+      "target": ">= 150 words",
+      "group": "content"
+    },
+    {
+      "check_id": "seo-content-thin",
+      "title": "Content is not thin",
+      "status": "pass",
+      "measured": null,
+      "target": ">= 300 words",
+      "group": "content"
+    },
+    {
+      "check_id": "seo-content-hard-to-read",
+      "title": "Content is readable",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": "Flesch reading ease >= 50",
+      "group": "content"
+    },
+    {
+      "check_id": "seo-content-grade-too-high",
+      "title": "Reading grade not too high",
+      "status": "pass",
+      "measured": null,
+      "target": "Gunning fog <= 16",
+      "group": "content"
+    },
+    {
+      "check_id": "seo-keyword-missing-in-title",
+      "title": "Primary keyword in title",
+      "status": "fail",
+      "severity": "medium",
+      "measured": null,
+      "target": null,
+      "group": "keyword"
+    },
+    {
+      "check_id": "seo-keyword-missing-in-h1",
+      "title": "Primary keyword in H1",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": null,
+      "group": "keyword"
+    },
+    {
+      "check_id": "seo-keyword-not-in-intro",
+      "title": "Primary keyword in the intro",
+      "status": "pass",
+      "measured": null,
+      "target": "within the first 100 words",
+      "group": "keyword"
+    },
+    {
+      "check_id": "seo-keyword-stuffing",
+      "title": "No keyword stuffing",
+      "status": "pass",
+      "measured": null,
+      "target": "density <= 3%",
+      "group": "keyword"
+    },
+    {
+      "check_id": "seo-eeat-no-https",
+      "title": "Served over HTTPS",
+      "status": "pass",
+      "measured": null,
+      "target": "https",
+      "group": "eeat"
+    },
+    {
+      "check_id": "seo-eeat-no-privacy-link",
+      "title": "Privacy policy linked",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "eeat"
+    },
+    {
+      "check_id": "seo-eeat-no-contact",
+      "title": "Contact information linked",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "eeat"
+    },
+    {
+      "check_id": "seo-eeat-no-author",
+      "title": "Author shown",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": null,
+      "group": "eeat"
+    },
+    {
+      "check_id": "seo-eeat-no-citations",
+      "title": "Cites external sources",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "eeat"
+    },
+    {
+      "check_id": "seo-eeat-no-date",
+      "title": "Publish/update date shown",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": null,
+      "group": "eeat"
+    },
+    {
+      "check_id": "seo-eeat-insufficient-content",
+      "title": "Enough content to assess E-E-A-T",
+      "status": "pass",
+      "measured": null,
+      "target": ">= 200 words",
+      "group": "eeat"
+    },
+    {
+      "check_id": "seo-linking-generic-anchors",
+      "title": "Descriptive anchor text",
+      "status": "pass",
+      "measured": null,
+      "target": "< 3 generic anchors",
+      "group": "internal_linking"
+    },
+    {
+      "check_id": "seo-linking-no-internal",
+      "title": "Links to other pages on the site",
+      "status": "pass",
+      "measured": null,
+      "target": ">= 1 internal link",
+      "group": "internal_linking"
+    },
+    {
+      "check_id": "seo-linking-insufficient-content",
+      "title": "Enough content to assess internal linking",
+      "status": "pass",
+      "measured": null,
+      "target": ">= 200 words",
+      "group": "internal_linking"
+    },
+    {
+      "check_id": "seo-linking-broken",
+      "title": "No broken internal links",
+      "status": "not_run",
+      "measured": null,
+      "target": "0 links returning 4xx/5xx",
+      "reason": "site-wide linking not measured (cross-page crawl off)",
+      "group": "internal_linking"
+    },
+    {
+      "check_id": "seo-linking-orphan",
+      "title": "No orphaned sitemap pages",
+      "status": "not_run",
+      "measured": null,
+      "target": "every sitemap page linked",
+      "reason": "site-wide linking not measured (cross-page crawl off)",
+      "group": "internal_linking"
+    },
+    {
+      "check_id": "seo-linking-hub",
+      "title": "Internal-link hubs identified",
+      "status": "not_run",
+      "measured": null,
+      "target": null,
+      "reason": "site-wide linking not measured (cross-page crawl off)",
+      "group": "internal_linking"
+    },
+    {
+      "check_id": "seo-snippet-no-question-heading",
+      "title": "Question-style heading present",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "snippet"
+    },
+    {
+      "check_id": "seo-snippet-no-concise-answer",
+      "title": "Concise answer under a question",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": "40-60 words",
+      "group": "snippet"
+    },
+    {
+      "check_id": "seo-snippet-no-faq-schema",
+      "title": "FAQ schema present",
+      "status": "pass",
+      "measured": null,
+      "target": "FAQPage",
+      "group": "snippet"
+    },
+    {
+      "check_id": "seo-geo-insufficient-content",
+      "title": "Enough content to assess AI discoverability",
+      "status": "pass",
+      "measured": null,
+      "target": null,
+      "group": "geo"
+    },
+    {
+      "check_id": "seo-geo-no-author-entity",
+      "title": "Author is a structured entity",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": "Person in JSON-LD",
+      "group": "geo"
+    },
+    {
+      "check_id": "seo-geo-stale-content",
+      "title": "Content recently updated",
+      "status": "pass",
+      "measured": null,
+      "target": "<= 180 days old",
+      "group": "geo"
+    },
+    {
+      "check_id": "seo-geo-ai-crawler-blocked",
+      "title": "AI crawlers allowed in robots.txt",
+      "status": "pass",
+      "measured": null,
+      "target": "no AI bot blocked",
+      "group": "geo"
+    },
+    {
+      "check_id": "seo-geo-no-llms-txt",
+      "title": "llms.txt published",
+      "status": "fail",
+      "severity": "info",
+      "measured": null,
+      "target": "/llms.txt present",
+      "group": "geo"
+    }
+  ],
+  "facts": {
+    "title": {
+      "text": "Non-Agentic — Tools, platforms & ideas for the AI-native organization",
+      "length": 69
+    },
+    "meta_description": {
+      "text": "Home of George Dekker's projects — the Common Practice platform, Portoser orchestration, enterprise n8n nodes, an MCP gateway, and writing on Deming.",
+      "length": 149
+    },
+    "h1": [
+      "Tools, platforms & ideas for the AI-native organization ."
+    ],
+    "heading_outline": [
+      {
+        "level": 1,
+        "text": "Tools, platforms & ideas for the AI-native organization ."
+      },
+      {
+        "level": 2,
+        "text": "What I'm building"
+      },
+      {
+        "level": 3,
+        "text": "The Non-Agentic AI System"
+      },
+      {
+        "level": 3,
+        "text": "Common Practice"
+      },
+      {
+        "level": 3,
+        "text": "RaiseMyTickets"
+      },
+      {
+        "level": 3,
+        "text": "Portoser"
+      },
+      {
+        "level": 3,
+        "text": "n8n Custom Nodes"
+      },
+      {
+        "level": 3,
+        "text": "Enterprise MCP"
+      },
+      {
+        "level": 3,
+        "text": "Specra"
+      },
+      {
+        "level": 2,
+        "text": "Ideas worth sharing"
+      },
+      {
+        "level": 3,
+        "text": "Common Practice — the novel"
+      },
+      {
+        "level": 3,
+        "text": "Essays & the Profound podcast"
+      },
+      {
+        "level": 2,
+        "text": "Let's talk"
+      }
+    ],
+    "images": {
+      "total": 1,
+      "missing_alt": 0
+    },
+    "canonical": "https://nonagentic.ai/",
+    "meta_robots": null,
+    "hreflang": [
+      {
+        "lang": "en",
+        "href": "https://nonagentic.ai/"
+      },
+      {
+        "lang": "nl",
+        "href": "https://nonagentic.ai/nl/"
+      },
+      {
+        "lang": "pl",
+        "href": "https://nonagentic.ai/pl/"
+      },
+      {
+        "lang": "fr",
+        "href": "https://nonagentic.ai/fr/"
+      },
+      {
+        "lang": "es",
+        "href": "https://nonagentic.ai/es/"
+      },
+      {
+        "lang": "de",
+        "href": "https://nonagentic.ai/de/"
+      },
+      {
+        "lang": "ar",
+        "href": "https://nonagentic.ai/ar/"
+      },
+      {
+        "lang": "he",
+        "href": "https://nonagentic.ai/he/"
+      },
+      {
+        "lang": "x-default",
+        "href": "https://nonagentic.ai/"
+      }
+    ],
+    "indexable": {
+      "value": true,
+      "reasons": [],
+      "checked": [
+        "meta_robots",
+        "canonical",
+        "robots_txt"
+      ]
+    },
+    "schema": {
+      "types_present": [
+        "Organization",
+        "WebSite"
+      ],
+      "industry": "saas",
+      "recommended": [
+        "FAQPage",
+        "Organization",
+        "SoftwareApplication",
+        "WebSite"
+      ],
+      "missing": [
+        "FAQPage",
+        "SoftwareApplication"
+      ],
+      "incomplete": {}
+    },
+    "primary_keyword": "ai",
+    "top_keywords": [
+      "ai",
+      "enterprise",
+      "projects",
+      "platform",
+      "essays",
+      "ai-native",
+      "organization",
+      "work",
+      "common",
+      "practice"
+    ],
+    "readability": {
+      "measured": true,
+      "words": 504,
+      "grade": 16.0,
+      "flesch": 35.47
+    },
+    "links": {
+      "measured": true,
+      "host": "nonagentic.ai",
+      "internal": 28,
+      "external": 6,
+      "generic_anchors": 0
+    },
+    "content_date": null,
+    "robots": {
+      "measured": true,
+      "fetched": true,
+      "status": 200,
+      "url": "https://nonagentic.ai/robots.txt",
+      "ai_bots_blocked": [],
+      "search_engines_blocked": false
+    },
+    "sitemap": {
+      "measured": true,
+      "found": true,
+      "status": 200,
+      "url": "https://nonagentic.ai/sitemap.xml"
+    },
+    "llms_txt": {
+      "measured": true,
+      "found": false,
+      "status": 404,
+      "url": "https://nonagentic.ai/llms.txt"
+    },
+    "crawl": {
+      "measured": false,
+      "reason": "site-wide linking not measured (cross-page crawl off)"
+    },
+    "performance": {
+      "measured": false,
+      "reason": "performance: not measured — no Lighthouse/Core Web Vitals measurement on the audit path"
+    }
+  },
+  "ai": {
+    "requested": true,
+    "status": "complete",
+    "reason": null,
+    "layers": [
+      {
+        "layer": "seo_intent",
+        "worker": "seo-intent-classify",
+        "status": "ok",
+        "reason": null
+      },
+      {
+        "layer": "seo_eeat",
+        "worker": "seo-eeat-depth",
+        "status": "ok",
+        "reason": null
+      },
+      {
+        "layer": "recommendations",
+        "worker": "audit-recommendation-writer",
+        "status": "ok",
+        "reason": "4 of 4 written"
+      },
+      {
+        "layer": "grounding",
+        "worker": "audit-claim-grounding",
+        "status": "ok",
+        "reason": null
+      },
+      {
+        "layer": "exec_summary",
+        "worker": "audit-exec-summary",
+        "status": "ok",
+        "reason": null
+      },
+      {
+        "layer": "critic",
+        "worker": "audit-report-critic",
+        "status": "ok",
+        "reason": null
+      }
+    ],
+    "annotations": [
+      {
+        "layer": "seo_intent",
+        "kind": "search_intent",
+        "title": "Search intent: commercial (primary keyword 'ai')",
+        "summary": "The detected primary keyword 'ai' has commercial search intent. Align the page's format and CTA with this intent.",
+        "data": {
+          "intent": "commercial",
+          "keyword": "ai",
+          "confidence": 0.82
+        }
+      },
+      {
+        "layer": "seo_eeat",
+        "kind": "eeat_depth",
+        "title": "E-E-A-T depth — experience: present, expertise: weak",
+        "summary": "Model assessment of content depth. Experience: present; Expertise: weak. The page describes the product but names no author or credentials.",
+        "data": {
+          "experience": "present",
+          "expertise": "weak",
+          "evidence": "The page describes the product but names no author or credentials.",
+          "author_signal": false
+        }
+      }
+    ]
+  },
+  "scored_at": "2026-10-18T08:43:53.305716+00:00"
+}

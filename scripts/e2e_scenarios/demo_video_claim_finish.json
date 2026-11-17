@@ -1,0 +1,56 @@
+{
+  "_doc": "MANUAL live coverage of claim_finish (A18) — the WM grounder->softener claim gate that has 0 completed rows in prod (always skipped for lack of brief.sources + legal.mode). A demo_video project whose brief.sources lists two IANA-reserved demo URLs makes the opt-in source_ingest leaf call kag.test so the grounding corpus is NON-EMPTY (claim_finish guard 3), and run.config_overrides.legal.mode='auto' wakes the stage (guard 2 — a `legal` block with no `mode` key must NOT wake it). pause_after_stages:['claim_finish'] runs demo_video_gen -> script_doctor -> source_ingest -> claim_finish and PAUSES before the plan tail. cleanup:keep leaves the paused run so the claim_finish stage_output (defensibility_manifest, disclaimers, per-line claim_status) can be inspected out-of-band. Assertions prove (a) source_ingest ingested >=2 sources with real grounding_text, and (b) claim_finish reached 'completed' (NOT skipped) AND emitted a non-empty defensibility_manifest.hash. brief.sources are example.com/example.org (IANA-reserved, stable) — the KAG scrape corpus for source_ingest (text only, never recorded), independent of target_url. Uses the already-provisioned E2E_LICENSE_TOKEN — no new secret. DECOUPLED FROM THE FLAKY CAPTURE BRANCH (2026-07-25): run.config_overrides.record.enabled=false makes demo_video_record skip clean, so this claim_finish proof no longer depends on the non-deterministic downstream capture path (demo_video_gen->bddgen malformed-Gherkin, or blank-clip min_sharpness=0.0) that previously HARD-failed a concurrent sibling and strand-aborted the whole run before claim_finish scheduled. record is a sibling of the claim branch (both depend only on demo_video_gen) and its only consumers — reconcile_timeline/footage_direction/compile — all sit AFTER claim_finish and are gated off by pause_after_stages, so opting record out has zero effect on the gen->script_doctor->source_ingest->claim_finish->PAUSE path this guard exercises. The demo_video_record:skipped assertion proves the opt-out took effect. claim_finish itself is independently PROVEN live (durable prod stage_output row on run 019f932e: defensibility_manifest.hash present, 6 lines) and stage-level proven via ClaimFinishStage.handle() in-pod (flagged 2 real superlatives, anti-laundering re-lint stamped survivors unsupported_accepted + a disclaimer).",
+  "cleanup": "keep",
+  "project": {
+    "type": "demo_video",
+    "title": "e2e-claim-finish-a18",
+    "brief": {
+      "target_url": "https://demo.playwright.dev/todomvc",
+      "max_scenarios_per_feature": 2,
+      "focus_areas": ["add a new todo item", "mark a todo as completed"],
+      "sources": [
+        {"kind": "url", "ref": "https://example.com"},
+        {"kind": "url", "ref": "https://example.org"}
+      ]
+    },
+    "voice": {
+      "descriptor": "clear, instructional, calm"
+    },
+    "deliverables": [
+      {
+        "name": "Demo video 16x9",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 60
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": ["claim_finish"],
+    "config_overrides": {"legal": {"mode": "auto"}, "record": {"enabled": false}}
+  },
+  "expect_terminal_status": ["paused"],
+  "expect_stage_assertions": [
+    {
+      "stage": "demo_video_record",
+      "status": "skipped"
+    },
+    {
+      "stage": "source_ingest",
+      "status": "completed",
+      "checks": [
+        {"type": "numeric_gte", "path": "sources_ingested", "value": 2},
+        {"type": "nonempty", "path": "grounding_text"}
+      ]
+    },
+    {
+      "_checks_doc": "lines[].id floor AUDITED 2026-09-05 and DELIBERATELY LEFT AT 1 — do not 'finish the job' by raising it to 2 to match its siblings. ClaimFinishOutput inherits `lines` from DemoVideoGenOutput (stages/demo_video/gen.py:363) and claim_finish stamps the spine rather than shortening it, so this floor is demo_video_gen's beat count. This brief declares `max_scenarios_per_feature: 2`, which is the CEILING the input authorises for that path, and demo_video_footage_relief's `_doc` records the realised yield on this exact configuration (TodoMVC, two focus_areas, cap 2) as EXACTLY 2 in every run ever measured. A floor of 2 would therefore be floor == observed == authorised ceiling — a demand for a perfect draw on an LLM-chosen count, which is precisely the defect tests/test_e2e_scenario_contracts.py::test_a_floor_leaves_headroom_under_the_ceiling_its_input_authorises exists to stop, and which demo_video_calibration already shipped twice at the cost of two live renders. Under the sizing rule in the same file (_FLOOR_SAFETY = 2.0 against a measured minimum of 2) the largest defensible floor here is 1. That guard does not currently key on ('claim_finish','lines[].id'), so CI would NOT have caught the raise — this note is the record that it was considered and rejected on the evidence, not overlooked. Raising it needs a re-measured yield or a higher `max_scenarios_per_feature`, moved together.",
+      "stage": "claim_finish",
+      "status": "completed",
+      "checks": [
+        {"type": "distinct_count_gte", "path": "lines[].id", "value": 1},
+        {"type": "nonempty", "path": "defensibility_manifest.hash"}
+      ]
+    }
+  ]
+}

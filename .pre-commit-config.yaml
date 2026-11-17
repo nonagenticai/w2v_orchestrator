@@ -1,0 +1,112 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint
+        args: [--ignore, DL3008, --ignore, DL3013, --ignore, DL3015]
+
+  # Secret scanning: the published tree ships no `.secrets.baseline` (it is
+  # estate-specific), so the detect-secrets hook is replaced by the betterleaks
+  # `secret-scan` job in `.github/workflows/ci-public.yml`.
+
+  - repo: local
+    hooks:
+      # NOTE: the uuid4 ban is enforced by ruff rule TID251 (banned-api) — see
+      # pyproject.toml [tool.ruff.lint.flake8-tidy-imports.banned-api]. That runs
+      # in CI (`ruff check .`) AND locally (the ruff hook above), so no separate
+      # pygrep hook is needed.
+      - id: ty-check
+        name: ty type check
+        entry: uv run ty check .
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # Fast local feedback for the two test-quality guards (<1s vs. the full
+      # pytest run below): assertion-free tests, and shape-only tests (whose
+      # every assertion is a call count or a call position). The GATES are
+      # tests/test_vacuous_test_guard.py and tests/test_shape_only_test_guard.py,
+      # which run in CI under the archetype's `uv run pytest tests/` — a
+      # pre-commit-only hook would be invisible to CI, which is the trap
+      # tests/test_any_ratchet.py already documents. This hook is a
+      # convenience, not the enforcement point.
+      - id: no-vacuous-tests
+        name: no assertion-free or shape-only tests
+        entry: uv run python -m scripts.check_vacuous_tests
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # ⚠️ THE GUARD SUBSET, NOT THE FULL SUITE — changed 2026-08-20, and the
+      # reason matters. This hook used to be `pytest tests/ -x`: ~6000 tests,
+      # single-process, `pass_filenames: false`, on every commit. This machine
+      # runs ~36 concurrent agent sessions; at load ~107 with swap exhausted the
+      # kernel simply KILLS it — measured here as `git commit` exiting 144 (SIGKILL
+      # via jetsam) after minutes of work, twice, including through the sanctioned
+      # retry loop. jetsam takes the whole process group, so nohup/setsid do not
+      # help. A gate that cannot run is not a gate; worse, it pushes people toward
+      # `--no-verify`, which skips ruff/ty/secrets TOO.
+      #
+      # So this now runs the GUARD tests — the cheap, high-signal ones that catch
+      # the failure classes this repo actually suffers from (the two ratchets, the
+      # vacuous-test guard, the e2e scenario contracts, the bare-httpx guard).
+      # They are seconds, not minutes, and they fail on exactly the mistakes a
+      # commit is likely to introduce.
+      #
+      # ⛔ THE ENFORCEMENT POINT IS UNCHANGED AND IS NOT HERE. The archetype's
+      # "Lint, types, tests" job runs `uv run pytest tests/` in full on every PR
+      # and every push to main. Nothing is skipped; it is run where there is
+      # memory to run it. Do not "restore" the full suite here without first
+      # checking `uptime` on the box this actually executes on.
+      #
+      # `python -m pytest` (not bare `pytest`): a stray Homebrew/system pytest
+      # earlier on PATH is a 3.9 build that can't even collect this 3.14-only
+      # codebase (uuid7 import). `-m` forces the project venv interpreter.
+      - id: pytest-guards
+        name: pytest guard subset (full suite runs in CI)
+        entry: >-
+          uv run python -m pytest
+          tests/test_stage_produces_ratchet.py
+          tests/test_vacuous_test_guard.py
+          tests/test_shape_only_test_guard.py
+          tests/test_no_bare_httpx_client.py
+          -x --tb=short -p no:randomly
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: pip-audit
+        name: pip-audit security scan (uv-export → pip-audit)
+        entry: scripts/pip-audit.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: bandit
+        name: bandit security scan
+        entry: uv run bandit -r src/ -ll -ii -c pyproject.toml
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

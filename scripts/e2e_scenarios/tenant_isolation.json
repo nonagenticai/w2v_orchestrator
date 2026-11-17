@@ -1,0 +1,5 @@
+{
+  "_doc": "v3 tenant isolation: probe a project-id that the caller's tenant does not own. The orchestrator returns 404 for both non-existent and other-tenant resources (no info leak between rejection modes). The negative test passes if the synthetic UUID GET returns 404.",
+  "probe_project_id": "00000000-0000-0000-0000-deadbeef0001",
+  "expect_status_code": 404
+}

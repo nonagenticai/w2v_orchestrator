@@ -1,0 +1,96 @@
+{
+  "_doc": "Full promo blueprint run: analyze → script → storyboard → render → review. Validates LLM (inference-router), video-compile, and the new stage_call/stage_gather primitives across all 5 promo stages. Expects `completed` (no pause_after_stages). Synthetic brief mirrors tests/fixtures/promo_brief.json — swap in real fr-promo brief for Phase 9.",
+  "project": {
+    "type": "promo",
+    "title": "Anti-Churn 30-day playbook",
+    "brief": {
+      "angle": "growth",
+      "audience": "B2B SaaS founders",
+      "target_duration_seconds": 45,
+      "value_proposition": "Cut churn 20% in 30 days with these three moves.",
+      "call_to_action": "Get the playbook.",
+      "primary_color": "#1F6FEB"
+    },
+    "brand": {
+      "logo_url": "https://stub.local/logo.svg",
+      "font": "Inter"
+    },
+    "voice": {
+      "descriptor": "confident, crisp, founder-to-founder",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "theme": {
+      "background": "#0B0E14",
+      "accent": "#1F6FEB"
+    },
+    "deliverables": [
+      {
+        "name": "16x9 hero",
+        "format": "16x9",
+        "captions_mode": "burned_in",
+        "target_duration_seconds": 45
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+  "_assert_doc": "expect_terminal_status alone proved only that the run finished, not that a video came out — on a nightly-core scenario. Shape copied from the proven-green sibling promo_title_card_happy_path.json, which asserts exactly promo_render.artifact_url + duration_seconds on this same blueprint and stage. The floor is 18, deliberately NOT the 45s target: it exists to catch an empty or one-second stub, not to police pacing. A tight floor here would be a tuning assertion, and promo pacing is untested against the fleet-wide LLM slowdown dated 2026-08-17.\n\nFLOOR RE-SIZED 2026-09-04 (>= 3 -> >= 18). The 2026-09-03 re-size to 3 was sized from the WRONG population: n=123, min 6.40s was BLUEPRINT-POOLED across every scenario on promo_v1, and that 6.40s minimum comes entirely from `e2e-promo-resolution-2k` -- a deliberate slide-only stub (3 hard-coded narrations, no LLM stage, no site_capture) that renders a constant 6.400s in all 7 of its runs and asserts only resolution. Pooling a constant-6.4s stub with a 45s full-blueprint promo made the floor near-vacuous: at 3 it would not have caught the 6.7s regression that hit `promo-title-card`. The SCENARIO-SCOPED population is the authoritative one: n=78, min 37.77s, p05 41.44s, median 50.36s. Sizing follows the two guards in tests/test_e2e_scenario_contracts.py: `_FLOOR_SAFETY = 2.0` demands floor * 2.0 <= the measured minimum, and `_ORDER_FRACTION_CEILING = 0.5` demands floor <= 0.5x the 45s this scenario ORDERS. min(37.77 / 2.0, 45 * 0.5) = min(18.885, 22.5) = 18.885, so the floor is 18. Check: 18 * 2.0 = 36.0 <= 37.77, and 18 <= 22.5. (30 would fail BOTH guards.) 18 still fails closed on an empty or one-second stub and stays under half the order, so it remains the empty-render check the paragraph above describes and not the pacing gate it rules out.",
+    "_pixel_doc": "Media ACCEPTANCE probes on the delivered master (scripts/e2e_validate.py _MEDIA_CHECKS). Before these, this scenario proved a url was a non-blank string and nothing about the bytes behind it. `artifact_reachable` proves the object downloads and decodes; `audio_present` proves an audio stream exists AND is not digital silence (ffmpeg volumedetect mean/peak dBFS); `resolution` reads the ENCODED width/height, not the number the stage reports about itself; `stream_durations` measures the VIDEO and AUDIO stream durations SEPARATELY and never the container -- a container duration is the MAX over its streams, so it can never refute a truncated video track. Floors are the ones this scenario's existing green assertions already prove, never new tuning numbers.\n\n`duration_within_tolerance` is present but DISARMED (`\"enabled\": false`). It compares the delivered stream length against `ordered_seconds` at the SAME +/-10% the pipeline's own duration_conformance uses. Flip `enabled` to true to arm it -- deliberately not armed while the duration calibration work is in flight, because a red instrument on known-in-flight work teaches people to ignore the instrument.",
+    "expect_pixel_checks": [
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "artifact_reachable",
+        "min_bytes": 4096
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "audio_present",
+        "true_peak_ceiling_dbtp": 0.0
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "resolution",
+        "min_width": 1280,
+        "min_height": 720,
+        "aspect": "16x9"
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "stream_durations",
+        "require_audio": true,
+        "min_audio_seconds": 22.5,
+        "require_video": true,
+        "min_video_seconds": 22.5
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "duration_within_tolerance",
+        "enabled": false,
+        "ordered_seconds": 45
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "declared_vs_measured",
+        "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+      }
+    ],
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "promo_render",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "artifact_url"},
+        {"type": "numeric_gte", "path": "duration_seconds", "value": 18}
+      ]
+    }
+  ]
+}

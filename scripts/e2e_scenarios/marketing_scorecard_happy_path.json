@@ -1,0 +1,23 @@
+{
+  "_doc": "Scan-only marketing_scorecard run: source_ingest skips (no brief.sources) -> marketing_scorecard_scan; no video sub-chain (video=None, so terminal_artifact_stage is None) and no pause gates. Mirrors cro_audit/seo_audit exactly. include_llm:false keeps it deterministic. distinct_count_gte dimensions[].dimension=3 is the scorecard-is-real guard — the model is a fixed SIX-dimension weighted score, so a run that emitted one token dimension fails here while `status == completed` would not.",
+  "project": {
+    "type": "marketing_scorecard",
+    "title": "e2e-marketing-scorecard",
+    "brief": {"target_url": "https://example.com", "include_llm": false},
+    "deliverables": [{"name": "Marketing scorecard", "format": "16x9", "captions_mode": "none"}]
+  },
+  "run": {"pause_after_stages": [], "config_overrides": {}},
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "marketing_scorecard_scan",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "url"},
+        {"type": "nonempty", "path": "grade"},
+        {"type": "numeric_gte", "path": "overall_score", "value": 0},
+        {"type": "distinct_count_gte", "path": "dimensions[].dimension", "value": 3}
+      ]
+    }
+  ]
+}

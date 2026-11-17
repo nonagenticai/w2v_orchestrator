@@ -1,0 +1,12 @@
+{
+  "_doc": "Storyboard branch-merge E2E (API-only, no render). Creates a throwaway generic project, seeds three panels, forks two siblings, and proves the merge features shipped this session are LIVE: (1) the mergeable_fields allowlist — vo_text is per-field mergeable, shot_key is fenced; (2) a DISJOINT sibling auto-merge — the source edit lands on the target while the target keeps its own edit, both branches staying open; (3) a CONFLICTING sibling merge — a shared-field edit is a conflict, a stale target_fingerprint is a 409, and an explicit per-key resolution merges it on a fresh fingerprint. Fast + deterministic (no LLM, no video-compiler). The project is deleted on teardown.",
+  "storyboard_merge": true,
+  "project": {
+    "type": "generic",
+    "title": "e2e-storyboard-merge",
+    "brief": {},
+    "deliverables": [
+      {"name": "merge smoke", "format": "16x9", "captions_mode": "none"}
+    ]
+  }
+}

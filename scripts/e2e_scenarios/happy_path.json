@@ -1,0 +1,36 @@
+{
+  "_doc": "v3 happy path: create a generic project, start a run, expect it to reach `paused` after brief_intake (a local-only stage with no LLM/downstream-service dependency). Validates: license-token auth, /api/projects create, /api/deliverables/{id}/runs dispatch, single-stage execution, and the pause-after-stages mechanism.",
+  "project": {
+    "type": "generic",
+    "title": "e2e-happy-path",
+    "brief": {
+      "angle": "contrarian",
+      "audience": "solo founders filing their own accounts",
+      "target_duration_seconds": 30
+    },
+    "voice": {"descriptor": "dry, understated, unhurried"},
+    "deliverables": [
+      {"name": "smoke-1", "format": "16x9"}
+    ]
+  },
+  "run": {
+    "pause_after_stages": ["brief_intake"],
+    "config_overrides": {}
+  },
+  "_assert_doc": "expect_terminal_status alone proved only that the run STOPPED, not that anything reached the stage. This is a nightly-core scenario, so that was the primary nightly signal. brief_intake defaults title to 'Untitled' and target_duration_seconds to 60 when the brief does not arrive, so equality against the values set above goes red if config_snapshot is dropped or the brief is not threaded through. Only brief_intake is assertable here: the run pauses after it, so no render stage ever executes and there is no artifact to check.",
+  "_strengthened_2026_09_05": "TWO changes, both about assertions that could not fail.\n\n(1) TERMINAL. Was [\"paused\", \"completed\"]. This scenario's stated purpose is to validate the pause-after-stages mechanism, and accepting `completed` accepted the exact failure it exists to catch: the generic blueprint has stages AFTER brief_intake (stages/generic/: script_draft, narrate, video_render), so a run that reaches `completed` with pause_after_stages=[\"brief_intake\"] means the gate did NOT hold. Narrowed to [\"paused\"], matching every other pausing spec in the suite (demo_video_gen_happy_path, demo_video_claim_finish).\n\n(2) DISCRIMINATING BRIEF VALUES. brief_intake (stages/generic/brief_intake.py:43-50) is a pure projection of config_snapshot — every one of its six output fields is `cfg/brief/voice.get(key, <default>)`, so there is no produced output here to assert on, only threading. That makes the DEFAULTS the whole game: angle defaulted to 'informational', audience to 'general' and voice.descriptor to 'neutral', and this brief had POSTed exactly those three strings — so an `equals` on any of them would have passed just as well against a DROPPED brief/voice block. They are now set to values no default can produce, which turns three vacuous fields into three real ones. `voice_descriptor` in particular is the only check covering the `voice` block, a different top-level snapshot key from `brief`. The pre-existing title/target_duration_seconds checks are KEPT: they were already discriminating (defaults 'Untitled' / 60) and are cheap.",
+  "expect_terminal_status": ["paused"],
+  "expect_stage_assertions": [
+    {
+      "stage": "brief_intake",
+      "status": "completed",
+      "checks": [
+        {"type": "equals", "path": "title", "value": "e2e-happy-path"},
+        {"type": "equals", "path": "target_duration_seconds", "value": 30},
+        {"type": "equals", "path": "angle", "value": "contrarian"},
+        {"type": "equals", "path": "audience", "value": "solo founders filing their own accounts"},
+        {"type": "equals", "path": "voice_descriptor", "value": "dry, understated, unhurried"}
+      ]
+    }
+  ]
+}

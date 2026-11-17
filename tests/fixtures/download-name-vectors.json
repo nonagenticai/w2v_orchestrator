@@ -1,0 +1,69 @@
+{
+ "_comment": "Shared verbatim with w2v_frontend src/lib/utils/download-name-vectors.json. Both repos assert their file-name stem function against every vector; change both files together.",
+ "vectors": [
+  {
+   "title": "commonpractice-app.nonagentic.ai",
+   "stem": "commonpractice-app-nonagentic-ai"
+  },
+  {
+   "title": "  Café Launch — Q4!  ",
+   "stem": "cafe-launch-q4"
+  },
+  {
+   "title": "Straße",
+   "stem": "stra-e"
+  },
+  {
+   "title": "a日b",
+   "stem": "a-b"
+  },
+  {
+   "title": "🎬🎬",
+   "stem": "video"
+  },
+  {
+   "title": "",
+   "stem": "video"
+  },
+  {
+   "title": "İstanbul",
+   "stem": "istanbul"
+  },
+  {
+   "title": "ﬁnal ＫＰＩ",
+   "stem": "final-kpi"
+  },
+  {
+   "title": "Ångström_ñ",
+   "stem": "angstrom-n"
+  },
+  {
+   "title": "---",
+   "stem": "video"
+  },
+  {
+   "title": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bcd",
+   "stem": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  {
+   "title": "日本語のみ",
+   "stem": "video"
+  },
+  {
+   "title": "Ünïcödé  Tëst",
+   "stem": "unicode-test"
+  },
+  {
+   "title": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "stem": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+   "title": "Q4 2026 / Launch #1",
+   "stem": "q4-2026-launch-1"
+  },
+  {
+   "title": null,
+   "stem": "video"
+  }
+ ]
+}

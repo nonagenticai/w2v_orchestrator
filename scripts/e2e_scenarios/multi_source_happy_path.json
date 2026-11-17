@@ -1,0 +1,35 @@
+{
+  "_doc": "First live coverage of the multi-source ingest path (webscraper + in-process document parse since the KAG removal) (source_ingest + brief.sources). A generic project whose brief.sources lists two public IANA-reserved demo URLs makes the opt-in source_ingest leaf actually call kag.test to scrape each; pause_after_stages:[source_ingest] fires ONLY the ingest (plus the concurrent no-dep brief_intake) and pauses before script_draft — no LLM, no TTS, no render, no compile, so this is a cheap live guard. Stage assertions prove BOTH sources were ingested (sources_ingested >= 2) and real grounding text came back (grounding_text nonempty) — a green `paused` alone would not catch a regression where source_ingest silently no-ops or KAG returns empty. Uses example.com/example.org (IANA-reserved demo domains, stable forever, same as app_review/website_review). Uses the already-provisioned E2E_LICENSE_TOKEN — no new secret. The authenticated-source + dedicated-ACG-provider variants need a per-tenant credential provisioned by ops and stay deferred.",
+  "project": {
+    "type": "generic",
+    "title": "e2e-multi-source",
+    "brief": {
+      "angle": "informational",
+      "audience": "general",
+      "target_duration_seconds": 30,
+      "sources": [
+        {"kind": "url", "ref": "https://example.com"},
+        {"kind": "url", "ref": "https://example.org"}
+      ]
+    },
+    "voice": {"descriptor": "neutral"},
+    "deliverables": [
+      {"name": "smoke-1", "format": "16x9"}
+    ]
+  },
+  "run": {
+    "pause_after_stages": ["source_ingest"],
+    "config_overrides": {}
+  },
+  "expect_terminal_status": ["paused"],
+  "expect_stage_assertions": [
+    {
+      "stage": "source_ingest",
+      "status": "completed",
+      "checks": [
+        {"type": "numeric_gte", "path": "sources_ingested", "value": 2},
+        {"type": "nonempty", "path": "grounding_text"}
+      ]
+    }
+  ]
+}

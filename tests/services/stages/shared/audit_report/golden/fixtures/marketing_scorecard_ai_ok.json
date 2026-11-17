@@ -1,0 +1,826 @@
+{
+  "overall_score": 88.1,
+  "grade": "B",
+  "dimension_scores": {
+    "content": 89.0,
+    "conversion": 90.4,
+    "seo": 95.4,
+    "competitive": 79.7,
+    "brand": 94.3,
+    "growth": 73.4
+  },
+  "dimensions": [
+    {
+      "dimension": "content",
+      "score": 89.0,
+      "weight": 0.25,
+      "count": 4,
+      "top_severity": "medium"
+    },
+    {
+      "dimension": "conversion",
+      "score": 90.4,
+      "weight": 0.2,
+      "count": 9,
+      "top_severity": "medium"
+    },
+    {
+      "dimension": "seo",
+      "score": 95.4,
+      "weight": 0.2,
+      "count": 8,
+      "top_severity": "medium"
+    },
+    {
+      "dimension": "competitive",
+      "score": 79.7,
+      "weight": 0.15,
+      "count": 3,
+      "top_severity": "medium"
+    },
+    {
+      "dimension": "brand",
+      "score": 94.3,
+      "weight": 0.1,
+      "count": 1,
+      "top_severity": "low"
+    },
+    {
+      "dimension": "growth",
+      "score": 73.4,
+      "weight": 0.1,
+      "count": 5,
+      "top_severity": "medium"
+    }
+  ],
+  "quick_wins": [
+    {
+      "check_id": "cro-hero-nav-distraction",
+      "dimension": "content",
+      "title": "22 competing nav links",
+      "severity": "medium",
+      "priority": 1.75,
+      "rank": 1,
+      "selector": "nav a, header a"
+    },
+    {
+      "check_id": "cro-social-no-testimonials",
+      "dimension": "conversion",
+      "title": "No testimonials or reviews",
+      "severity": "medium",
+      "priority": 1.4,
+      "rank": 2
+    },
+    {
+      "check_id": "seo-keyword-missing-in-title",
+      "dimension": "seo",
+      "title": "Primary keyword missing from the title tag",
+      "severity": "medium",
+      "priority": 1.4,
+      "rank": 3,
+      "evidence": "primary='ai'",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows primary='ai'.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      }
+    },
+    {
+      "check_id": "mkt-competitive-weak-differentiation",
+      "dimension": "competitive",
+      "title": "No differentiation claim in the headline area",
+      "severity": "medium",
+      "priority": 1.05,
+      "rank": 4
+    },
+    {
+      "check_id": "mkt-growth-no-pricing-visibility",
+      "dimension": "growth",
+      "title": "No visible pricing or packaging",
+      "severity": "medium",
+      "priority": 0.7,
+      "rank": 8
+    }
+  ],
+  "strategic": [
+    {
+      "check_id": "cro-form-textarea",
+      "dimension": "conversion",
+      "title": "1 free-text textarea(s) in the form",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 12,
+      "selector": "form textarea"
+    },
+    {
+      "check_id": "cro-cta-no-first-person",
+      "dimension": "conversion",
+      "title": "No first-person CTA copy",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 9,
+      "selector": "a, button"
+    },
+    {
+      "check_id": "cro-social-no-logos",
+      "dimension": "conversion",
+      "title": "No client/logo trust strip",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 14
+    },
+    {
+      "check_id": "cro-social-no-ratings",
+      "dimension": "conversion",
+      "title": "No star ratings",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 16
+    },
+    {
+      "check_id": "cro-social-no-metrics",
+      "dimension": "conversion",
+      "title": "No quantified proof or media mentions",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 15
+    },
+    {
+      "check_id": "cro-valueprop-no-quantified-benefit",
+      "dimension": "content",
+      "title": "Value proposition is not quantified",
+      "severity": "low",
+      "priority": 0.75,
+      "rank": 6
+    },
+    {
+      "check_id": "cro-valueprop-few-bullets",
+      "dimension": "content",
+      "title": "Few or no benefit bullets",
+      "severity": "low",
+      "priority": 0.75,
+      "rank": 5
+    },
+    {
+      "check_id": "cro-valueprop-reading-grade",
+      "dimension": "content",
+      "title": "Reading grade 13 is high",
+      "severity": "low",
+      "priority": 0.75,
+      "rank": 7,
+      "evidence": "Flesch-Kincaid grade 12.9",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows Flesch-Kincaid grade 12.9.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      }
+    },
+    {
+      "check_id": "cro-objection-no-risk-reversal",
+      "dimension": "conversion",
+      "title": "No risk reversal",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 13
+    },
+    {
+      "check_id": "cro-footer-no-final-cta",
+      "dimension": "conversion",
+      "title": "No closing CTA",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 11,
+      "selector": "footer"
+    },
+    {
+      "check_id": "cro-footer-no-contact",
+      "dimension": "conversion",
+      "title": "No contact/support link in footer",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 10,
+      "selector": "footer"
+    },
+    {
+      "check_id": "seo-content-hard-to-read",
+      "dimension": "seo",
+      "title": "Content is fairly difficult to read",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 17,
+      "evidence": "Flesch Reading Ease 35",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows Flesch Reading Ease 35.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      }
+    },
+    {
+      "check_id": "seo-keyword-missing-in-h1",
+      "dimension": "seo",
+      "title": "Primary keyword missing from the H1",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 21,
+      "evidence": "primary='ai'",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows primary='ai'.",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      }
+    },
+    {
+      "check_id": "seo-snippet-no-concise-answer",
+      "dimension": "seo",
+      "title": "Question headings lack a concise answer",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 23
+    },
+    {
+      "check_id": "seo-eeat-no-author",
+      "dimension": "seo",
+      "title": "No author attribution",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 18
+    },
+    {
+      "check_id": "seo-eeat-no-date",
+      "dimension": "seo",
+      "title": "No publish or update date",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 19
+    },
+    {
+      "check_id": "seo-schema-coverage-gap",
+      "dimension": "seo",
+      "title": "Missing recommended schema types: FAQPage, SoftwareApplication",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 22,
+      "evidence": "industry=saas present=['Organization', 'WebSite']",
+      "recommendation": {
+        "fix_prose": "Fix this on the page where it shows industry=saas present=['Organization', 'WebSite'].",
+        "rationale": "It blocks the visitor or the crawler.",
+        "example": "Before: <old>; after: <new>.",
+        "effort": "low"
+      }
+    },
+    {
+      "check_id": "seo-geo-no-author-entity",
+      "dimension": "seo",
+      "title": "Author is not a structured entity",
+      "severity": "low",
+      "priority": 0.6,
+      "rank": 20
+    },
+    {
+      "check_id": "mkt-competitive-no-comparison",
+      "dimension": "competitive",
+      "title": "No comparison or alternatives content",
+      "severity": "low",
+      "priority": 0.45,
+      "rank": 24
+    },
+    {
+      "check_id": "mkt-competitive-no-reputation",
+      "dimension": "competitive",
+      "title": "No third-party reputation signals",
+      "severity": "low",
+      "priority": 0.45,
+      "rank": 25
+    },
+    {
+      "check_id": "mkt-brand-no-logo",
+      "dimension": "brand",
+      "title": "No identifiable logo",
+      "severity": "low",
+      "priority": 0.3,
+      "rank": 26
+    },
+    {
+      "check_id": "mkt-growth-no-growth-loop",
+      "dimension": "growth",
+      "title": "No growth loop (referral / advocacy)",
+      "severity": "low",
+      "priority": 0.3,
+      "rank": 29
+    },
+    {
+      "check_id": "mkt-growth-no-retention-hook",
+      "dimension": "growth",
+      "title": "No retention / nurture hook",
+      "severity": "low",
+      "priority": 0.3,
+      "rank": 30
+    },
+    {
+      "check_id": "mkt-growth-no-email-capture",
+      "dimension": "growth",
+      "title": "No email-capture affordance",
+      "severity": "low",
+      "priority": 0.3,
+      "rank": 28
+    },
+    {
+      "check_id": "mkt-growth-no-analytics",
+      "dimension": "growth",
+      "title": "No web analytics or tag manager detected",
+      "severity": "low",
+      "priority": 0.3,
+      "rank": 27
+    }
+  ],
+  "source": "https://nonagentic.ai",
+  "llm_enriched": true,
+  "llm_assessments": [
+    {
+      "element": "headline",
+      "dimension": "content",
+      "score": 55.0,
+      "assessment": "The headline names a feature, not an outcome.",
+      "suggestion": "Lead with the outcome the visitor gets."
+    }
+  ],
+  "projection": {
+    "baseline": 88.1,
+    "projected": 90.0,
+    "delta": 1.9,
+    "removed": [
+      "cro-hero-nav-distraction",
+      "cro-social-no-testimonials",
+      "seo-keyword-missing-in-title"
+    ]
+  },
+  "grounding": [
+    {
+      "check_id": "seo-keyword-missing-in-title",
+      "supported": true,
+      "evidence_ref": "quoted from the page"
+    },
+    {
+      "check_id": "cro-valueprop-reading-grade",
+      "supported": true,
+      "evidence_ref": "quoted from the page"
+    },
+    {
+      "check_id": "seo-content-hard-to-read",
+      "supported": true,
+      "evidence_ref": "quoted from the page"
+    },
+    {
+      "check_id": "seo-keyword-missing-in-h1",
+      "supported": true,
+      "evidence_ref": "quoted from the page"
+    },
+    {
+      "check_id": "seo-schema-coverage-gap",
+      "supported": true,
+      "evidence_ref": "quoted from the page"
+    }
+  ],
+  "exec_summary": {
+    "summary": "The page scores below target; the top findings block conversion.",
+    "so_what": "Fixing the top three recovers the most points.",
+    "roadmap": []
+  },
+  "critique": {
+    "score": 81.0,
+    "generic_check_ids": [],
+    "ungrounded_check_ids": [],
+    "rerun_stages": []
+  },
+  "findings": [
+    {
+      "check_id": "mkt-competitive-weak-differentiation",
+      "title": "No differentiation claim in the headline area",
+      "severity": "medium",
+      "description": "The H1/H2 copy makes no differentiation or category claim (e.g. 'the only…', 'unlike…', 'purpose-built for…'). Visitors cannot tell how this offer differs from alternatives in the first few seconds.",
+      "fix": "State a concrete point of difference or category position in the headline or subhead.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 1,
+      "priority": 1.05,
+      "action_bucket": "quick_win",
+      "dimension": "competitive"
+    },
+    {
+      "check_id": "mkt-growth-no-pricing-visibility",
+      "title": "No visible pricing or packaging",
+      "severity": "medium",
+      "description": "No pricing, plans, or price signals were found. Hidden pricing adds friction and filters out self-serve buyers who want to qualify themselves before talking to sales.",
+      "fix": "Expose pricing or a plans/packaging section (or a clear 'contact for pricing' path).",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 2,
+      "priority": 0.7,
+      "action_bucket": "quick_win",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-competitive-no-comparison",
+      "title": "No comparison or alternatives content",
+      "severity": "low",
+      "description": "There is no comparison, 'vs', or 'alternative to' content. Buyers evaluating options search for these; owning that surface captures comparison-stage intent.",
+      "fix": "Add a comparison table or a 'vs / alternative to' section addressing the main competitors.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 3,
+      "priority": 0.45,
+      "action_bucket": "strategic",
+      "dimension": "competitive"
+    },
+    {
+      "check_id": "mkt-competitive-no-reputation",
+      "title": "No third-party reputation signals",
+      "severity": "low",
+      "description": "No third-party review platform (G2, Capterra, Trustpilot…) or media mention is referenced. Borrowed authority reassures skeptical buyers comparing vendors.",
+      "fix": "Surface review-platform ratings or 'as featured in' media logos.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 4,
+      "priority": 0.45,
+      "action_bucket": "strategic",
+      "dimension": "competitive"
+    },
+    {
+      "check_id": "mkt-brand-no-logo",
+      "title": "No identifiable logo",
+      "severity": "low",
+      "description": "No logo image was detected in the header or by class/alt. A visible logo anchors brand identity and trust.",
+      "fix": "Place a logo image in the header with a descriptive alt.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 5,
+      "priority": 0.3,
+      "action_bucket": "strategic",
+      "dimension": "brand"
+    },
+    {
+      "check_id": "mkt-growth-no-analytics",
+      "title": "No web analytics or tag manager detected",
+      "severity": "low",
+      "description": "No analytics, tag-manager, or conversion-pixel snippet was found in the static HTML (e.g. GA4, Google Tag Manager, Meta Pixel, LinkedIn Insight, PostHog, Segment). Without measurement a site cannot attribute channels, quantify conversion, or run experiments. NOTE: trackers injected client-side by a SPA may not be visible to a static fetch.",
+      "fix": "Install a web-analytics platform and, if running paid acquisition, the relevant conversion pixels — ideally via a tag manager. If already present via a JS bundle, expose it in the initial HTML for reliability.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 6,
+      "priority": 0.3,
+      "action_bucket": "strategic",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-growth-no-email-capture",
+      "title": "No email-capture affordance",
+      "severity": "low",
+      "description": "No email input or newsletter form was found. Email is the highest-ROI owned channel; without a capture point, visitors who aren't ready to buy leave with no way to be nurtured back.",
+      "fix": "Add an email/newsletter capture form to a prominent surface.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 7,
+      "priority": 0.3,
+      "action_bucket": "strategic",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-growth-no-growth-loop",
+      "title": "No growth loop (referral / advocacy)",
+      "severity": "low",
+      "description": "No referral, affiliate, or invite mechanism is present. Growth loops turn existing users into an acquisition channel and lower CAC over time.",
+      "fix": "Add a referral, affiliate, or invite-a-colleague loop.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 8,
+      "priority": 0.3,
+      "action_bucket": "strategic",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-growth-no-retention-hook",
+      "title": "No retention / nurture hook",
+      "severity": "low",
+      "description": "No newsletter, community, blog, or content hook was found. Visitors who are not ready to buy leave with no way to stay in the funnel.",
+      "fix": "Add a newsletter signup, community link, or content hub to nurture not-yet-ready visitors.",
+      "effort": "low",
+      "evidence": null,
+      "selector": null,
+      "rank": 9,
+      "priority": 0.3,
+      "action_bucket": "strategic",
+      "dimension": "growth"
+    }
+  ],
+  "checks": [
+    {
+      "check_id": "mkt-competitive-weak-differentiation",
+      "title": "Differentiation claim in the headline area",
+      "status": "fail",
+      "severity": "medium",
+      "measured": null,
+      "target": "An H1/H2 states a point of difference or category position",
+      "dimension": "competitive"
+    },
+    {
+      "check_id": "mkt-competitive-no-comparison",
+      "title": "Comparison or alternatives content",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": "A 'vs' / 'alternative to' / comparison section or link",
+      "dimension": "competitive"
+    },
+    {
+      "check_id": "mkt-competitive-no-reputation",
+      "title": "Third-party reputation signals",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": "A review platform (G2, Capterra, Trustpilot…) or media mention",
+      "dimension": "competitive"
+    },
+    {
+      "check_id": "mkt-brand-no-structured-data",
+      "title": "Structured data (Schema.org)",
+      "status": "pass",
+      "measured": null,
+      "target": "At least one JSON-LD block (Organization / Product)",
+      "dimension": "brand"
+    },
+    {
+      "check_id": "mkt-brand-no-og-image",
+      "title": "Open Graph image",
+      "status": "pass",
+      "measured": "https://nonagentic.ai/assets/og/index.png?v=0c0aa016",
+      "target": "<meta property=\"og:image\"> set (1200x630)",
+      "dimension": "brand"
+    },
+    {
+      "check_id": "mkt-brand-no-favicon",
+      "title": "Favicon",
+      "status": "pass",
+      "measured": "/favicon.svg",
+      "target": "<link rel=\"icon\"> declared",
+      "dimension": "brand"
+    },
+    {
+      "check_id": "mkt-brand-no-logo",
+      "title": "Identifiable logo",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": "A logo image in the header or tagged logo by class/alt",
+      "dimension": "brand"
+    },
+    {
+      "check_id": "mkt-brand-no-about",
+      "title": "About / team link",
+      "status": "pass",
+      "measured": null,
+      "target": "A link to an About / Team / Company page",
+      "dimension": "brand"
+    },
+    {
+      "check_id": "mkt-brand-no-contact-info",
+      "title": "Contact information",
+      "status": "pass",
+      "measured": null,
+      "target": "An email, labelled phone, address or contact link",
+      "dimension": "brand"
+    },
+    {
+      "check_id": "mkt-brand-incomplete-social-card",
+      "title": "Complete social-share card",
+      "status": "pass",
+      "measured": null,
+      "target": "og:title + og:description + twitter:card alongside og:image",
+      "dimension": "brand"
+    },
+    {
+      "check_id": "mkt-growth-no-pricing-visibility",
+      "title": "Visible pricing or packaging",
+      "status": "fail",
+      "severity": "medium",
+      "measured": null,
+      "target": "Price / plans copy or a pricing link",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-growth-no-growth-loop",
+      "title": "Growth loop (referral / advocacy)",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": "A referral, affiliate or invite mechanism",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-growth-no-retention-hook",
+      "title": "Retention / nurture hook",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": "A newsletter, community, blog or content hub",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-growth-no-email-capture",
+      "title": "Email-capture affordance",
+      "status": "fail",
+      "severity": "low",
+      "measured": null,
+      "target": "An email / newsletter input",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-growth-no-social-presence",
+      "title": "Owned social channels linked",
+      "status": "pass",
+      "measured": "linkedin",
+      "target": "At least one link to an owned social profile",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-growth-no-analytics",
+      "title": "Web analytics or tag manager",
+      "status": "fail",
+      "severity": "low",
+      "measured": "none detected",
+      "target": "An analytics / tag-manager / pixel snippet in the HTML",
+      "dimension": "growth"
+    },
+    {
+      "check_id": "mkt-growth-no-consent",
+      "title": "Cookie-consent mechanism",
+      "status": "not_run",
+      "measured": null,
+      "target": "A consent banner / CMP gating the detected trackers",
+      "reason": "No analytics detected — consent only applies once tracking runs",
+      "dimension": "growth"
+    }
+  ],
+  "facts": {
+    "positioning": {
+      "fold_copy_excerpt": "Tools, platforms & ideas for the AI-native organization . What I'm building Ideas worth sharing Let's talk",
+      "differentiation_claim": null,
+      "comparison_page": false,
+      "reputation_signals": []
+    },
+    "brand": {
+      "logo": {
+        "present": false,
+        "url": null
+      },
+      "og_image_url": "https://nonagentic.ai/assets/og/index.png?v=0c0aa016",
+      "favicon": {
+        "present": true,
+        "url": "/favicon.svg"
+      },
+      "about_link": {
+        "present": true,
+        "url": "/book"
+      },
+      "contact": {
+        "present": true,
+        "email": null,
+        "phone": null
+      },
+      "social_card_fields": {
+        "og_title": true,
+        "og_description": true,
+        "og_image": true,
+        "twitter_card": true
+      }
+    },
+    "channels": {
+      "social_profiles": [
+        {
+          "platform": "linkedin",
+          "url": "https://www.linkedin.com/in/georgedekker/"
+        }
+      ],
+      "email_capture": false,
+      "analytics_vendors": [],
+      "consent": false,
+      "pricing_visible": false,
+      "referral": false,
+      "retention_hook": false
+    },
+    "competitive_benchmark": {
+      "measured": false,
+      "reason": "No competitor pages analysed — add competitor URLs"
+    },
+    "channel_performance": {
+      "measured": false,
+      "reason": "Channel performance needs analytics/ad-account data — not available to a page scan"
+    },
+    "dimension_sources": [
+      {
+        "dimension": "content",
+        "weight": 0.25,
+        "score": 89.0,
+        "weighted_points": 22.25,
+        "source_engine": "cro",
+        "reference_only": true,
+        "report_pointer": "cro_audit"
+      },
+      {
+        "dimension": "conversion",
+        "weight": 0.2,
+        "score": 90.4,
+        "weighted_points": 18.08,
+        "source_engine": "cro",
+        "reference_only": true,
+        "report_pointer": "cro_audit"
+      },
+      {
+        "dimension": "seo",
+        "weight": 0.2,
+        "score": 95.4,
+        "weighted_points": 19.08,
+        "source_engine": "seo",
+        "reference_only": true,
+        "report_pointer": "seo_audit"
+      },
+      {
+        "dimension": "competitive",
+        "weight": 0.15,
+        "score": 79.7,
+        "weighted_points": 11.96,
+        "source_engine": "marketing",
+        "reference_only": false,
+        "report_pointer": null
+      },
+      {
+        "dimension": "brand",
+        "weight": 0.1,
+        "score": 94.3,
+        "weighted_points": 9.43,
+        "source_engine": "marketing",
+        "reference_only": false,
+        "report_pointer": null
+      },
+      {
+        "dimension": "growth",
+        "weight": 0.1,
+        "score": 73.4,
+        "weighted_points": 7.34,
+        "source_engine": "marketing",
+        "reference_only": false,
+        "report_pointer": null
+      }
+    ]
+  },
+  "ai": {
+    "requested": true,
+    "status": "complete",
+    "reason": null,
+    "layers": [
+      {
+        "layer": "recommendations",
+        "worker": "audit-recommendation-writer",
+        "status": "ok",
+        "reason": "5 of 5 written"
+      },
+      {
+        "layer": "grounding",
+        "worker": "audit-claim-grounding",
+        "status": "ok",
+        "reason": null
+      },
+      {
+        "layer": "micro_judge",
+        "worker": "cro-micro-judge",
+        "status": "ok",
+        "reason": null
+      },
+      {
+        "layer": "exec_summary",
+        "worker": "audit-exec-summary",
+        "status": "ok",
+        "reason": null
+      },
+      {
+        "layer": "critic",
+        "worker": "audit-report-critic",
+        "status": "ok",
+        "reason": null
+      }
+    ],
+    "annotations": []
+  },
+  "scored_at": "2026-10-18T08:43:54.987851+00:00"
+}

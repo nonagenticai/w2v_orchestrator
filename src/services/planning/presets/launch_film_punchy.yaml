@@ -1,0 +1,11 @@
+# Documentation + override seam. SOURCE OF TRUTH: `_BUILTIN_BASELINE` in
+# ../presets.py (see default.yaml header). Not parsed in this slice.
+name: launch_film_punchy
+wpm: 165.0
+vo_lufs: -14.0
+mood_default: energetic
+voice_count: 2
+dialogue_enabled: true
+transition_style: cut
+card_templates: [title_bullets, value_prop, cta]
+checkpoint_mode: autopilot

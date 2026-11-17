@@ -1,0 +1,188 @@
+{
+  "_doc": "Full action_reel blueprint run: source_ingest -> footage_probe -> shot_analysis -> segment_select (+ music_select in parallel) -> cut_plan -> {graphics_design, narrate} -> compile -> render_manifest. FOOTAGE: action_reel's footage_probe HARD-fails ('project has no video_sources') on an empty project, and the only writer of that table is the multipart product route POST /api/projects/{id}/video-sources (no URL/BYO ingest door). `video_fixture` therefore has e2e_validate.py synthesise 4 clips with ffmpeg IN THE VALIDATOR POD (the orchestrator production image installs ffmpeg, Dockerfile:59) and upload them over that real route before the run starts. Each clip is 3 concatenated lavfi generators x 3s = 9s (36s of source for a 20s reel), so every clip carries two HARD scene cuts at t=3 and t=6 (verified with ffprobe scene detection) and mpdecimate keeps 216/216 frames \u2014 i.e. the fixture itself has zero duplicate frames and real motion, so shot_analysis has a motion curve, segment_select has something to choose between, and any duplicate-frame finding in the reel is the product's, not the fixture's. Clips differ from each other by generator rotation AND a per-clip hue rotation. GATES: the blueprint marks five stages default_pause_after=True (shot_analysis, segment_select, music_select, cut_plan, graphics_design), but the run engine reads pause_after_stages from the REQUEST only (the blueprint markers seed the UI's pause list). run.pause_after_stages=[] therefore runs all five on autopilot to `completed` with no human \u2014 the same mechanism website_review_happy_path.json relies on. brief.mood is the only field music_select needs (action_reel has no typed-brief door; the brief is free-form) and the bed comes from the server-side sound library, not from this file. No brief.narration.lines, so `narrate` skips clean and never blocks compile; no brief.sources, so `source_ingest` skips clean (terminal-but-fine, satisfies both branches' depends_on). Assertions mirror scripts/action_reel_e2e.py's per-gate honesty checks: a non-empty beat grid with an attributed source and a real bed (its BEAT_GRID_EMPTY), a solver that actually solved against that grid rather than falling back to even spacing (its SOLVER_DEGRADED), and a compile that emitted a real artifact_url.\n\nDURATION FLOORS RE-SIZED 2026-09-03 (>= 10 -> >= 7, on BOTH cut_plan.total_seconds and render_manifest.manifest.duration_seconds -- the planned and the realised form of the same quantity, kept as two checks on purpose so a render that silently truncates relative to its plan still trips the second one). MEASURED over a 90-day window of completed `stage_outputs` for this scenario: min 14.42s / max 22.46s, n=10, against the 20s ordered target. 10 cleared the observed minimum by only 1.44x -- one short cut plan erases that, and n=10 is not a wide enough sample to trust a 1.44x margin. 7 restores 2.06x while still failing closed on the class this floor exists for: an empty reel, a one-shot reel, or a manifest reporting a stub. It is deliberately still ANCHORED to the order rather than being a free constant: 7 is 35% of the 20s `target_duration_seconds` this scenario itself sets, i.e. well under the 50% at which a film is considered grossly underfull, so this assertion can never quietly become a pacing gate. tests/test_e2e_scenario_contracts.py enforces both halves -- the 2x measured margin and the <= 50%-of-order ceiling -- so re-ordering this scenario to a different duration without revisiting the floor reds in CI.",
+  "video_fixture": {
+    "clips": 4,
+    "segments_per_clip": 3,
+    "segment_seconds": 3,
+    "size": "320x240",
+    "fps": 24
+  },
+  "project": {
+    "type": "action_reel",
+    "title": "e2e-action-reel-happy-path",
+    "brief": {
+      "mood": "high-energy, driving, cinematic",
+      "audience": "watersport and drone footage owners",
+      "target_duration_seconds": 20
+    },
+    "voice": {
+      "descriptor": "energetic, punchy, minimal"
+    },
+    "brand": {
+      "font": "Inter"
+    },
+    "theme": {
+      "background": "#0B0E14",
+      "accent": "#1F6FEB"
+    },
+    "deliverables": [
+      {
+        "name": "Action reel 16x9",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 20
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+    "_pixel_doc": "Media ACCEPTANCE probes on the delivered master (scripts/e2e_validate.py _MEDIA_CHECKS). Before these, this scenario proved a url was a non-blank string and nothing about the bytes behind it. `artifact_reachable` proves the object downloads and decodes; `audio_present` proves an audio stream exists AND is not digital silence (ffmpeg volumedetect mean/peak dBFS); `resolution` reads the ENCODED width/height, not the number the stage reports about itself; `stream_durations` measures the VIDEO and AUDIO stream durations SEPARATELY and never the container -- a container duration is the MAX over its streams, so it can never refute a truncated video track. Floors are the ones this scenario's existing green assertions already prove, never new tuning numbers.\n\n`duration_within_tolerance` stays DISARMED here (`\"enabled\": false`), like every other scenario. It was briefly armed on the argument that action_reel's length is SOLVED rather than estimated (target_duration.py feeds cut_plan.py, which fits the shot list to the ordered target). That argument does not survive this file's OWN measured sample, recorded in the `_doc` above: n=10, min 14.42s, max 22.46s against a 20s order -- i.e. -27.9% to +12.3%, with at least 2 of the 10 already outside the 18.0-22.0 band. Arming it would be a coin flip, and promo is shot-list authored too yet still missed at +14.18%, so \"authored, not narrated\" does not imply \"in band\".\n\nThe arithmetic says why: the solver stops at the FIRST shot crossing the target (cut_plan.py:784) and the remaining budget is only a +0.20 cost PENALTY (cut_plan.py:1183), never a hard constraint -- so a window longer than the budget can still win, and an 8-beat span at 120 BPM (~4s) overshoots a 20s order by up to +20%. That is deliberate: OVERRUN_NOTE_FRACTION is 0.25 (cut_plan.py:284), i.e. the authors tolerate up to 25% overrun before even emitting a note, choosing musical cuts over an exact number. So +/-10% is very likely the WRONG BAND for this type rather than the pipeline being wrong. compile.py now records the delivered-vs-ordered row, so the proof pass will produce the evidence to pick the right band -- arm this only once that measurement is in, and state the band it justifies.",
+    "expect_pixel_checks": [
+      {
+        "stage": "compile",
+        "path": "artifact_url",
+        "type": "artifact_reachable",
+        "min_bytes": 4096
+      },
+      {
+        "stage": "compile",
+        "path": "artifact_url",
+        "type": "audio_present",
+        "true_peak_ceiling_dbtp": 0.0
+      },
+      {
+        "stage": "compile",
+        "path": "artifact_url",
+        "type": "resolution",
+        "min_width": 1280,
+        "min_height": 720,
+        "aspect": "16x9"
+      },
+      {
+        "stage": "compile",
+        "path": "artifact_url",
+        "type": "stream_durations",
+        "require_audio": true,
+        "min_audio_seconds": 10,
+        "require_video": true,
+        "min_video_seconds": 10
+      },
+      {
+        "stage": "compile",
+        "path": "artifact_url",
+        "type": "duration_within_tolerance",
+        "enabled": false,
+        "ordered_seconds": 20
+      },
+      {
+        "stage": "compile",
+        "path": "artifact_url",
+        "type": "declared_vs_measured",
+        "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+      }
+    ],
+  "expect_terminal_status": [
+    "completed"
+  ],
+  "expect_stage_assertions": [
+    {
+      "stage": "footage_probe",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "sources[].id",
+          "value": 4
+        },
+        {
+          "type": "numeric_gte",
+          "path": "total_duration_s",
+          "value": 30
+        }
+      ]
+    },
+    {
+      "stage": "music_select",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "beats[]",
+          "value": 4
+        },
+        {
+          "type": "nonempty",
+          "path": "grid_source"
+        },
+        {
+          "type": "nonempty",
+          "path": "track_url"
+        }
+      ]
+    },
+    {
+      "stage": "segment_select",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "segments[].id",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "stage": "cut_plan",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "shots[].id",
+          "value": 2
+        },
+        {
+          "type": "equals",
+          "path": "beat_grid_available",
+          "value": true
+        },
+        {
+          "type": "equals",
+          "path": "solver_stubbed",
+          "value": false
+        },
+        {
+          "type": "numeric_gte",
+          "path": "total_seconds",
+          "value": 7
+        }
+      ]
+    },
+    {
+      "stage": "compile",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "artifact_url"
+        }
+      ]
+    },
+    {
+      "stage": "render_manifest",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "manifest.artifact_url"
+        },
+        {
+          "type": "numeric_gte",
+          "path": "manifest.duration_seconds",
+          "value": 7
+        }
+      ]
+    }
+  ]
+}

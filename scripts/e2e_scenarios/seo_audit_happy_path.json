@@ -1,0 +1,29 @@
+{
+  "_doc": "Scan-only seo_audit blueprint run: seo_audit_scan -> video chain skips (generate_video unset). Drives analysis_service's SEO scoring engine AND the #398 advanced code path via brief.cross_page_linking (the sitemap cross-page crawl fires on cross_page_linking alone; competitor_urls is validated + forwarded to the scan, but the competitor content-gap analyzer is include_llm-gated in analysis_service and no-ops here since include_llm is false — kept off so this post-promote guard stays deterministic and needs no seeded LLM worker). Terminal `completed` on the scan output; the deliverable is required by /api/projects (min_length=1) but never fulfilled on a scan-only run. distinct_count_gte groups[].group=3 is the real scorecard-is-real guard (9-group catalog is fixed, so this only fails on a malformed/empty 200).",
+  "project": {
+    "type": "seo_audit",
+    "title": "e2e-seo-audit",
+    "brief": {
+      "target_url": "https://example.com",
+      "include_llm": false,
+      "competitor_urls": ["https://example.org"],
+      "cross_page_linking": true,
+      "max_pages": 3
+    },
+    "deliverables": [{"name": "SEO scorecard", "format": "16x9", "captions_mode": "none"}]
+  },
+  "run": {"pause_after_stages": [], "config_overrides": {}},
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "seo_audit_scan",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "url"},
+        {"type": "nonempty", "path": "grade"},
+        {"type": "numeric_gte", "path": "overall_score", "value": 0},
+        {"type": "distinct_count_gte", "path": "groups[].group", "value": 3}
+      ]
+    }
+  ]
+}

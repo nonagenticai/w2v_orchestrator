@@ -1,0 +1,44 @@
+{
+  "_doc": "Direct score-delta happy path: POST /api/brand/score-delta scores a before URL and an after URL and returns the before/after delta in one call. Deterministic (no LLM, no worker) — ungated, green as soon as analysis_service is deployed. Exercises fetch+score on BOTH sides plus the pure compute_score_deltas/compare_findings core. Asserts stable keys overall_delta + score_deltas (always set on a 200), never volatile per-finding output.",
+  "service_probe": {
+    "service": "analysis",
+    "method": "POST",
+    "path": "/api/brand/score-delta",
+    "body": {
+      "before": {
+        "url": "https://example.com"
+      },
+      "after": {
+        "url": "https://www.anthropic.com"
+      }
+    },
+    "auth": "license",
+    "expect_status_code": 200,
+    "expect_keys": [
+      "score_deltas"
+    ],
+    "checks": [
+      {
+        "type": "numeric_gte",
+        "path": "overall_delta",
+        "value": -100
+      },
+      {
+        "type": "numeric_gte",
+        "path": "before.overall_score",
+        "value": 1
+      },
+      {
+        "type": "numeric_gte",
+        "path": "after.overall_score",
+        "value": 1
+      },
+      {
+        "type": "nonempty",
+        "path": "after.categories[]"
+      }
+    ]
+  },
+  "_assertions": "CLOSED 2026-09-06 by the engine change in scripts/e2e_validate.py: run_service_probe now desugars `expect_keys` into STRICT `present` checks (0/0.0/False/[]/{}/\"\" all FAIL) and accepts a `checks` list evaluated by the same _eval_check used by expect_stage_assertions. The discriminating floors below are what make this probe fail on a response that fetched or scored nothing.",
+  "_overall_delta_is_not_a_presence_check": "`overall_delta` is deliberately NOT in expect_keys: presence is now STRICT (falsy fails) and a delta of exactly 0.0 is LEGITIMATE (identical before/after scores). It is asserted instead as `numeric_gte overall_delta >= -100`. That bound is NOT a meaningful floor - no numerically valid delta of two 0-100 scores can fail it; it is a type/presence guard that rejects a null, a non-numeric, or an absent key without reddening an honest zero. The discriminating power for this scenario lives in the before/after numeric_gte and nonempty checks below, not here."
+}

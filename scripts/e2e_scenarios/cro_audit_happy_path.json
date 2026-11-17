@@ -1,0 +1,23 @@
+{
+  "_doc": "Scan-only cro_audit blueprint run: cro_audit_scan -> video chain skips. Drives analysis_service's CRO scoring engine. Terminal `completed`; deliverable required by /api/projects but never fulfilled. distinct_count_gte subsections[].section=2 is the scorecard-is-real guard (8-section catalog is fixed).",
+  "project": {
+    "type": "cro_audit",
+    "title": "e2e-cro-audit",
+    "brief": {"target_url": "https://example.com", "include_llm": false},
+    "deliverables": [{"name": "CRO scorecard", "format": "16x9", "captions_mode": "none"}]
+  },
+  "run": {"pause_after_stages": [], "config_overrides": {}},
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "cro_audit_scan",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "url"},
+        {"type": "nonempty", "path": "grade"},
+        {"type": "numeric_gte", "path": "overall_score", "value": 0},
+        {"type": "distinct_count_gte", "path": "subsections[].section", "value": 2}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+# =============================================================================
+# Offline override: forces all 5 stub providers ON, disables paid SDKs.
+#
+# Usage:
+#   docker compose \
+#     -f docker-compose.yml \
+#     -f docker-compose.offline.yml \
+#     up -d --build
+#
+# Combines with the standard override automatically when invoked via
+# scripts/offline_smoke.sh, which also sets COMPOSE_PROFILES=services.
+# =============================================================================
+services:
+  analysis:
+    environment:
+      LLM_PROVIDER: stub
+      LLM_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+      OPENAI_API_KEY: ""
+      CONTENT_GENERATION_ENABLED: "false"
+
+  content:
+    environment:
+      LLM_PROVIDER: stub
+      LLM_API_KEY: ""
+      DEEPSEEK_API_KEY: ""
+      OPENAI_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+
+  tts:
+    environment:
+      TTS_PROVIDER: stub
+      STUB_ENABLED: "true"
+      KOKORO_ENABLED: "false"
+      KITTEN_ENABLED: "false"
+      OPENAI_TTS_ENABLED: "false"
+      ELEVENLABS_ENABLED: "false"
+      OPENAI_TTS_API_KEY: ""
+      ELEVENLABS_API_KEY: ""
+
+  ai-content-generation:
+    environment:
+      IMAGE_PROVIDER: stub
+      VIDEO_PROVIDER: stub
+      GENERATION_DEFAULT_PROVIDER: stub
+      IMAGE_GENERATION_DEFAULT_PROVIDER: stub
+      DALLE_ENABLED: "false"
+      DALLE_API_KEY: ""
+      FAL_KEY: ""
+      RUNWAY_API_KEY: ""
+      GOOGLE_AI_API_KEY: ""
+      MOCK_PROVIDER_ENABLED: "false"
+
+  video-analyzer:
+    environment:
+      ANALYZER_PROVIDER: stub
+      VISION_DEFAULT_PROVIDER: stub
+      VISION_OPENAI_API_KEY: ""
+      VISION_ANTHROPIC_API_KEY: ""
+      VISION_GOOGLE_API_KEY: ""
+
+  # The orchestrator does not need to know about stubs, but we make sure no
+  # paid LLM key leaks through default values. The pipeline uses downstream
+  # services exclusively for any LLM/TTS/image/video work.
+  orchestrator:
+    environment:
+      DEEPSEEK_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+      OPENAI_API_KEY: ""
+      W2V_LLM_PROVIDER: stub

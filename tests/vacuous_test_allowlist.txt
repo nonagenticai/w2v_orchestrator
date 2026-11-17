@@ -1,0 +1,18 @@
+# Grandfathered vacuous tests — test_* functions containing NO assertion.
+#
+# Enforced by tests/test_vacuous_test_guard.py (detector: scripts/check_vacuous_tests.py).
+# This list is a ONE-WAY RATCHET: entries may only be REMOVED. Adding a line
+# here also requires lowering nothing — it requires not adding it. A new
+# assertion-free test fails CI; fix the test, do not extend this file.
+#
+# Regenerate the raw list with:
+#     uv run python -m scripts.check_vacuous_tests --list
+#
+# Every entry below is the SAME shape: a "calling this must not raise" smoke
+# test. The fix in each case is one line — bind the call's result or wrap it,
+# and assert something observable (e.g. `assert client._client is None` after
+# close, or `pytest.raises` proving the negative case DOES raise, so the
+# positive case is not vacuously green). When you fix one, delete its line here
+# AND lower MAX_VACUOUS_TESTS in tests/test_vacuous_test_guard.py to match.
+#
+# Format: <repo-relative path>::<TestClass.>test_name   # reason

@@ -1,0 +1,38 @@
+{
+  "_doc": "Deterministic author-driven shotlist path (shotlist arc item c). A promo run whose brief carries a 3-shot slide-only `shotlist`; PromoScriptStage.short_circuit() must emit exactly those 3 lines verbatim with deterministic ids shot-000..shot-002 and NO LLM script generation. pause_after_stages:[promo_script] stops the run the moment script completes — the dag_executor launches promo_storyboard/promo_narrate/promo_slides together once promo_script finishes (same parallel group), so pausing on promo_script (not storyboard) is the only cut that avoids TTS + slide render. Slide-only (no url shots) keeps site_capture skipping, so the run needs only one promo_analyze LLM hop + the deterministic short-circuit: fast and flake-free. Stage assertions prove the shotlist actually drove the script (3 distinct shot ids, all non-blank narration) — a green `paused` alone would not catch a regression that silently fell back to the LLM path. Recorder/url-shot coverage (item b) is deploy-tested separately and deliberately left out to keep this gating job dependency-light.\n\nFLOOR PINNED, NOT RE-SIZED (recorded 2026-09-03). `promo_script lines[].id >= 3` reads as fragile from the numbers alone -- MEASURED over a 90-day window of completed `stage_outputs` on blueprint promo_v1 the distinct-id count is min exactly 3 / p50 9 (n=145), i.e. the floor sits ON the observed minimum. For THIS scenario that is not a lucky draw, it is a CONTRACT: the brief authors a 3-entry `shotlist` and PromoScriptStage emits one line per authored shot, so 3 is the count the INPUT pins and the measured minimum of exactly 3 is that pin holding on every one of those 145 runs. Lowering it would stop the assertion proving the authored shotlist survived the stage, which is the entire point of the scenario -- pinning beats lowering here. tests/test_e2e_scenario_contracts.py now DERIVES the pin from `project.brief.shotlist` and requires this floor to EQUAL it, so editing the shotlist without editing the floor (or the reverse) reds in CI in under a second instead of on the night the scenario runs.",
+  "project": {
+    "type": "promo",
+    "title": "e2e-promo-shotlist",
+    "brief": {
+      "angle": "growth",
+      "audience": "B2B SaaS founders",
+      "target_duration_seconds": 30,
+      "shotlist": [
+        {"kind": "slide", "narration": "Churn is quietly killing your MRR.", "slide": {"template": "title", "title": "The churn problem"}},
+        {"kind": "slide", "narration": "Three moves cut it twenty percent in thirty days.", "slide": {"template": "bullets", "title": "Three moves", "bullets": ["Onboard fast", "Catch risk early", "Win back"]}},
+        {"kind": "slide", "narration": "Get the playbook today.", "slide": {"template": "cta", "title": "Get the playbook", "cta_url": "https://example.com/"}}
+      ]
+    },
+    "brand": {"font": "Inter"},
+    "voice": {"descriptor": "confident, crisp, founder-to-founder", "model_preference": "qwen3-coder-30b"},
+    "theme": {"background": "#0B0E14", "accent": "#1F6FEB"},
+    "deliverables": [
+      {"name": "16x9 hero", "format": "16x9", "captions_mode": "burned_in", "target_duration_seconds": 30}
+    ]
+  },
+  "run": {
+    "pause_after_stages": ["promo_script"],
+    "config_overrides": {}
+  },
+  "expect_terminal_status": ["paused"],
+  "expect_stage_assertions": [
+    {
+      "stage": "promo_script",
+      "status": "completed",
+      "checks": [
+        {"type": "distinct_count_gte", "path": "lines[].id", "value": 3},
+        {"type": "nonempty", "path": "lines[].text"}
+      ]
+    }
+  ]
+}

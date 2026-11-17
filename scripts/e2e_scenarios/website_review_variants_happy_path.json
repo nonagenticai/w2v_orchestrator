@@ -1,0 +1,46 @@
+{
+  "_doc": "HEAVY website_review run that exercises the path the plain website_review_happy_path deliberately avoids: REDESIGN VARIANT FAN-OUT against a TALL real page. `brief.redesign_styles` is a list (not the scalar `redesign_style`), which the website_redesign stage forwards as `styles=` to html_render_service, triggering per-style variant generation + a Chromium screenshot of each generated redesign AND a capture of the original. That variant + full-page combination was the live OOM source the html_render_service rearchitecture (durable claim-queue + MinIO + browser pool + 8000px height cap + replicas=2/HPA) was built to survive — but the only OTHER post-promote E2E hits example.com with no variants, so the dangerous path had no continuous coverage. Target is a content-rich, extremely-stable Wikipedia article (real external fetch, like example.com in the lean scenario) that is genuinely tall (~thousands of px) rather than example.com's ~600px stub — but DELIBERATELY a shorter article than the enormous `/Typography` it used to point at, to keep the heavy path inside the website_redesign.wait budget. The website_redesign stage now also requests `screenshot_viewports=[desktop]` (the 16:9 after act + compile._prefer_desktop only ever use the desktop shot), so each variant renders one viewport instead of three. `expect_stage_assertions` proves the redesign actually produced multiple distinct screenshots — terminal `completed` alone would not catch a regression that returns an empty `visuals` list. pause_after_stages:[] runs straight to `completed` through the standard script/record/compile/growth chain. Heavier than the lean scenario by design; deadline/timeout in the workflow matrix are widened accordingly.",
+  "project": {
+    "type": "website_review",
+    "title": "Wikipedia Web typography — multi-variant redesign critique",
+    "brief": {
+      "audience": "frontend designers evaluating IA on a dense content page",
+      "target_url": "https://en.wikipedia.org/wiki/Web_typography",
+      "redesign_style": "modern, generous whitespace, single CTA",
+      "redesign_styles": [
+        "bold editorial, large serif headlines, dark theme, single accent",
+        "minimal swiss grid, generous whitespace, restrained palette"
+      ],
+      "duration_seconds": 60
+    },
+    "voice": {
+      "descriptor": "design-critic, calm, specific",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "brand": {"font": "Inter"},
+    "theme": {"background": "#0B0E14", "accent": "#1F6FEB"},
+    "deliverables": [
+      {
+        "name": "Review video 16x9",
+        "format": "16x9",
+        "captions_mode": "burned_in",
+        "target_duration_seconds": 60
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "website_redesign",
+      "status": "completed",
+      "checks": [
+        { "type": "nonempty", "path": "visuals[].image_url" },
+        { "type": "distinct_count_gte", "path": "visuals[].image_url", "value": 2 }
+      ]
+    }
+  ]
+}

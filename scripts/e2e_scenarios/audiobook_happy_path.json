@@ -1,0 +1,100 @@
+{
+  "_doc": "Full audiobook blueprint run: ingest \u2192 plan \u2192 cast \u2192 narrate \u2192 stitch. The FIRST live exercise of multi-voice voice-acting: it calls the `audiobook-casting` WM worker (pinning its output shape with the correct schema), real kokoro TTS on mini2, and the video_compiler concat. The harness has no file-upload step, so the manuscript rides inline in `manuscript_fixture`; the validator stages it via POST /api/uploads/manuscript and injects the ref into brief.manuscript_ref before creating the project. `chapter_mode:single` + a ~6-line two-speaker excerpt keeps narrate to a handful of TTS calls. `voice_acting:true` enables LLM casting; `voice_cast` pins one character so the override path runs. pause_after_stages:[] overrides the blueprint's ingest+cast pauses so the run goes straight to `completed`. `expect_stage_assertions` proves the cast produced >=2 distinct voices and stitch produced an artifact \u2014 green alone would not prove voices are distinct.\n\nFLOOR PINNED, NOT RE-SIZED (recorded 2026-09-03). `audiobook_cast casting[].voice_id >= 2` was flagged fragile because MEASURED over a 90-day window of completed `stage_outputs` the distinct voice count is min = max = 2 (n=3) -- floor exactly ON the observed minimum, on a sample far too thin to size a number from. Pinning is the honest answer: the cast is AUTHORED, not chosen -- `project.voice.voice_id` names the narrator (af_heart) and `brief.voice_cast` names exactly one character voice (Alice -> bf_emma), so 1 + 1 = 2 distinct voices is what the input pins and what all 3 runs returned. Lowering to 1 would make the check pass on a run that cast the narrator for EVERYTHING, i.e. on the exact multi-voice regression this scenario is the first live exercise of. tests/test_e2e_scenario_contracts.py now derives the pin as 1 + len(brief.voice_cast) and requires this floor to EQUAL it, so adding a character to the cast without raising the floor reds in CI.",
+  "project": {
+    "type": "audiobook",
+    "title": "E2E voice-acting smoke",
+    "brief": {
+      "chapter_mode": "single",
+      "voice_acting": true,
+      "voice_cast": {
+        "Alice": "bf_emma"
+      },
+      "audiobook": {
+        "output_format": "mp3",
+        "chapter_gap_ms": 300
+      }
+    },
+    "voice": {
+      "voice_id": "af_heart",
+      "speed": 1.0,
+      "descriptor": "warm, measured, audiobook narrator"
+    },
+    "brand": {
+      "font": "Inter"
+    },
+    "theme": {
+      "background": "#0B0E14",
+      "accent": "#1F6FEB"
+    },
+    "deliverables": [
+      {
+        "name": "Audiobook",
+        "format": "audio",
+        "captions_mode": "none"
+      }
+    ]
+  },
+  "manuscript_fixture": {
+    "filename": "e2e_sample.txt",
+    "text": "The afternoon was warm, and Alice sat by the riverbank with nothing to do.\n\"I wonder what time it is,\" Alice said, peering down the long grassy slope.\nA white rabbit hurried past, muttering to himself as he checked a small pocket watch.\nAlice rose to her feet at once. \"How curious! A rabbit with a waistcoat and a watch.\"\nShe followed him across the meadow, determined not to lose sight of so strange a creature.\nDown the rabbit went, into a hole beneath the hedge, and down went Alice after him."
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+  "_pixel_doc": "Media ACCEPTANCE probes on the delivered master (scripts/e2e_validate.py _MEDIA_CHECKS). Before these, this scenario proved a url was a non-blank string and nothing about the bytes behind it. `artifact_reachable` proves the object downloads and decodes; `audio_present` proves an audio stream exists AND is not digital silence (ffmpeg volumedetect mean/peak dBFS); `resolution` reads the ENCODED width/height, not the number the stage reports about itself; `stream_durations` measures the VIDEO and AUDIO stream durations SEPARATELY and never the container -- a container duration is the MAX over its streams, so it can never refute a truncated video track. Floors are the ones this scenario's existing green assertions already prove, never new tuning numbers.\n\n`duration_within_tolerance` is present but DISARMED (`\"enabled\": false`). It compares the delivered stream length against `ordered_seconds` at the SAME +/-10% the pipeline's own duration_conformance uses. Flip `enabled` to true to arm it -- deliberately not armed while the duration calibration work is in flight, because a red instrument on known-in-flight work teaches people to ignore the instrument.",
+  "expect_pixel_checks": [
+    {
+      "stage": "audiobook_stitch",
+      "path": "artifact_url",
+      "type": "artifact_reachable",
+      "min_bytes": 4096
+    },
+    {
+      "stage": "audiobook_stitch",
+      "path": "artifact_url",
+      "type": "audio_present",
+      "true_peak_ceiling_dbtp": 0.0
+    },
+    {
+      "stage": "audiobook_stitch",
+      "path": "artifact_url",
+      "type": "stream_durations",
+      "require_audio": true,
+      "min_audio_seconds": 10,
+      "require_video": false
+    },
+    {
+      "stage": "audiobook_stitch",
+      "path": "artifact_url",
+      "type": "declared_vs_measured",
+      "_doc": "Header-vs-decoded guard on the delivered audiobook. This was deliberately OMITTED at first because audio could not be measured: ffprobe publishes no avg_frame_rate (and no frame_size) for an audio stream, so the packet-count route that measures video returns nothing and the probe fell back to the header -- i.e. an assertion that could not fail, which is worse than none. Audio is now measured by DECODING (ffmpeg -f null - with -progress, reading out_time_us), so the exclusion no longer applies and is removed. It matters most HERE: audiobook is the one type whose entire deliverable IS the audio, with no video track to cross-check against, so before this it was the last place a truncated master could read completely clean. THE incident this guards: a moov declaring 12.0s over content that decodes to 2.81s -- every header-reading duration assertion believes the 12.0."
+    }
+  ],
+  "expect_terminal_status": [
+    "completed"
+  ],
+  "expect_stage_assertions": [
+    {
+      "stage": "audiobook_cast",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "casting[].voice_id",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "stage": "audiobook_stitch",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "artifact_url"
+        }
+      ]
+    }
+  ]
+}

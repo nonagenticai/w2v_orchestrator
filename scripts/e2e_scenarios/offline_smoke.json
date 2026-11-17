@@ -1,0 +1,37 @@
+{
+  "url": "http://example.invalid/offline-smoke",
+  "site_name": "offline-smoke",
+  "config": {
+    "mode": "dry_run",
+    "stages_enabled": [
+      "analyze",
+      "storyline",
+      "shotlist",
+      "generate"
+    ],
+    "max_concurrent_stages": 2,
+    "timeout_seconds": 600,
+    "retry_max_attempts": 1
+  },
+  "prior_results": {
+    "crawl": {
+      "status": "succeeded",
+      "url": "http://example.invalid/offline-smoke",
+      "title": "Offline Smoke Fixture",
+      "html": "<html><head><title>Offline Smoke</title></head><body><h1>Offline Smoke</h1><p>Deterministic content for the LLM_PROVIDER=stub pipeline.</p></body></html>",
+      "screenshots": [],
+      "pages": [
+        {
+          "url": "http://example.invalid/offline-smoke",
+          "title": "Offline Smoke Fixture",
+          "text": "Offline Smoke. Deterministic content for the LLM_PROVIDER=stub pipeline."
+        }
+      ]
+    },
+    "research": {
+      "status": "succeeded",
+      "summary": "Stub research summary for offline pipeline.",
+      "sources": []
+    }
+  }
+}

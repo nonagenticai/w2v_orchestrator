@@ -1,0 +1,43 @@
+# Grandfathered SHAPE-ONLY tests — test_* functions whose every assertion
+# describes the IMPLEMENTATION's shape (how many calls, in what position)
+# rather than what the code did.
+#
+# Enforced by tests/test_shape_only_test_guard.py
+# (detector: scripts/check_vacuous_tests.py::find_shape_only_tests).
+#
+# This list is a ONE-WAY RATCHET: entries may only be REMOVED. A NEW shape-only
+# test fails CI — fix the test, do not extend this file. When you fix one,
+# delete its line here AND lower MAX_SHAPE_ONLY_TESTS to match.
+#
+# Regenerate the raw list with:
+#     uv run python -m scripts.check_vacuous_tests --list-shape
+#
+# WHY THIS CLASS IS WORSE THAN NO TEST
+# ------------------------------------
+# It breaks on any CORRECT change and passes on any WRONG one that preserves
+# the shape. On 2026-08-24/25, w2v-common 0.65.0 added one legitimate statement
+# (REVOKE CONNECT ON DATABASE <db> FROM PUBLIC — the born-LOCKED provisioning
+# policy) and reddened FIVE tests across FOUR sibling repos, none of which was
+# asserting anything at all about database creation. The fix in every case was
+# the same: replace the fixed-length side_effect list with a side_effect
+# FUNCTION that RECORDS the statements, then assert over the recorded list
+# (`assert any("CREATE DATABASE ..." in s for s in executed)`) instead of
+# counting calls. See tts_service 0676f77 for the canonical shape.
+#
+# SOME ENTRIES BELOW ARE DEFENSIBLE, AND THAT IS THE POINT
+# --------------------------------------------------------
+# For a mock that stands in for an external EFFECT (close a client, cancel a
+# task, re-scrape), "was it called" genuinely is the observable. A static
+# checker cannot tell that apart from "I counted calls because I could not
+# think of a property". So those land here with a stated reason — a reviewed
+# exemption, not a silent hole in the detector. What the gate actually buys is
+# that the NEXT one has to be argued for.
+#
+# Format: <repo-relative path>::<TestClass.>test_name   # reason
+
+tests/services/runs/test_renarrate.py::test_renarrate_closes_the_tts_client  # effect-is-the-behaviour: aclose() on an inline TTSClient; the leak IS the missing call
+tests/services/stages/audiobook/test_narrate.py::test_narrate_via_gateway_closes_client  # effect-is-the-behaviour: client close on the gateway path
+tests/services/test_storage_service.py::TestMediaCacheLifecycleAndClose.test_close_closes_session  # effect-is-the-behaviour: session close
+tests/unit/test_database_connection.py::test_ensure_db_retries_on_connection_error  # counts connect() attempts; does not assert the retry succeeded or what it retried
+tests/unit/test_run_dispatcher_control.py::test_handle_control_cancels_owned_task  # effect-is-the-behaviour: task.cancel() is the cancellation observable
+tests/unit/test_run_dispatcher_failure.py::TestPostDrainStageFailure.test_post_drain_cancelled_row_also_fails_run  # only assert_called* — does not assert the run row reached 'failed'

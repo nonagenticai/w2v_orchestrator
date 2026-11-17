@@ -1,0 +1,69 @@
+{
+  "_doc": "Studio service lab (the per-GPU-service test bench, /api/services/*): POST /api/services/image with a license token generates a real image and returns the persisted run. This is the ONLY live proof of the bench chain — AuthMiddleware -> license gate -> slot resolution (src/services/providers/resolver.py; honours byo_mode) -> AIContentGenerationClient job submit/poll -> image-gen on mini1 -> MinIO store -> service_runs row. It exists because the page shipped and was verified to render, but no generation had ever been proven end to end: the browser is behind Keycloak, and every unauthenticated probe only ever reached 401.",
+  "service_probe": {
+    "service": "orchestrator",
+    "method": "POST",
+    "path": "/api/services/image",
+    "body": {
+      "prompt": "a single red apple on a plain white table, soft studio light",
+      "width": 512,
+      "height": 512
+    },
+    "auth": "license",
+    "timeout_seconds": 240,
+    "expect_status_code": 200,
+    "expect_keys": [
+      "id",
+      "slot",
+      "status",
+      "created_at",
+      "media_url",
+      "media_content_type"
+    ],
+    "checks": [
+      {
+        "type": "equals",
+        "path": "slot",
+        "value": "image"
+      },
+      {
+        "type": "equals",
+        "path": "status",
+        "value": "succeeded"
+      },
+      {
+        "type": "equals",
+        "path": "output_kind",
+        "value": "image"
+      },
+      {
+        "type": "nonempty",
+        "path": "media_url"
+      },
+      {
+        "type": "in",
+        "path": "media_content_type",
+        "values": [
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ]
+      },
+      {
+        "type": "in",
+        "path": "provider.source",
+        "values": [
+          "deployment",
+          "tenant"
+        ]
+      },
+      {
+        "type": "nonempty",
+        "path": "provider.kind"
+      }
+    ]
+  },
+  "_wire_doc": "⛔ FIELD NAMES ARE snake_case. This scenario originally asserted camelCase (`createdAt`, `mediaUrl`, `mediaContentType`, `outputKind`) and could never pass: `ServiceRunView` sets `model_config = _camel`, and `src/api/schemas/_shared.py::_camel` is `ConfigDict(populate_by_name=True, str_strip_whitespace=True)` — NO `alias_generator`, so the name is a misnomer and the wire has always been snake_case. FastAPI emits `response_model_by_alias`, which is a no-op without aliases. Measured 2026-11-02 against the live pod: body keys were `['created_at','duration_ms','error','id','media_content_type','media_url','output_kind','provider','request','slot','status','text']`. Do not 'fix' these back to camelCase; that is the bug this fixes.",
+  "_assert_doc": "The status literal is 'succeeded', NOT 'completed' (routes/service_lab.py:558 -- 'completed' is the ACG JOB status inside the invoker, a different thing). A 200 alone would prove nothing: _execute returns 200 only on the success path, but the run's own fields are what say the media exists. media_content_type is written ONLY when a media object was actually stored (routes/service_lab.py:563 -- `result.media_content_type if media_key else None`), and a store failure returns 502 before the row is inserted, so `media_content_type in (image/png|jpeg|webp)` is the assertion that the bytes reached MinIO and not merely that a row was written. provider.source is an allow-list of the two legal values ('tenant' when the caller's own connection served it, 'deployment' for the platform default) rather than a pinned 'deployment', so this does not red the moment the e2e tenant registers its own image connection. timeout_seconds is 240 against the route's own 180s server-side budget (routes/service_lab.py::_TIMEOUT_SECONDS['image']): the probe default of 60 would fail a healthy ~40s generation plus ACG submit/poll overhead.",
+  "_cost_doc": "Free and local: image-gen runs MLX/mflux on mini1, not a paid API. Kept nightly:false because it is proof for a feature, not a per-night regression, and every dispatch spends a shared ARC runner plus a GPU slot."
+}

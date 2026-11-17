@@ -1,0 +1,209 @@
+services:
+  # ============================================================================
+  # PostgreSQL Database
+  # ============================================================================
+  w2v_orchestrator_postgres:
+    image: postgres:18-alpine
+    container_name: w2v_orchestrator_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: w2v_orchestrator
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+      # postgres:18 moved its default PGDATA to /var/lib/postgresql/18/docker,
+      # so a volume mounted at the old .../data path no longer holds the data —
+      # it lived in the container layer and vanished on recreate. Pin PGDATA to
+      # the mount point so the named volume actually persists the cluster.
+      PGDATA: /var/lib/postgresql/data
+    ports:
+      - "5450:5432"
+    volumes:
+      - w2v_orchestrator_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orchestrator-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # PostgreSQL — test database (pytest only, never the app)
+  # ============================================================================
+  # Deliberately a SEPARATE server from w2v_orchestrator_postgres above, not
+  # just a second database inside it:
+  #
+  #  - It mirrors the CI container exactly. CI runs the stock `postgres:18`
+  #    image with POSTGRES_USER=ci_test, which makes ci_test a SUPERUSER and so
+  #    grants it CREATEROLE. The RLS/tenant-isolation tests need CREATEROLE
+  #    (see tests/conftest.py::_skip_or_fail_without_createrole) — pointing
+  #    pytest at the app's restricted `postgres` role would silently skip
+  #    exactly the cross-tenant coverage we most need to keep honest.
+  #  - tmpfs, no named volume. Test data is worthless by definition, and a
+  #    persisted volume is how a stale schema survives across model changes.
+  #    A fresh container every `up` is the point, not a cost.
+  #  - Separate server => `docker compose down -v` on the app DB can never take
+  #    the test DB's schema with it, and vice versa.
+  w2v_orchestrator_test_postgres:
+    image: postgres:18-alpine
+    container_name: w2v_orchestrator_test_postgres
+    environment:
+      # These are throwaway local-test credentials, not a secret. They match the
+      # ephemeral container tests/support/test_db.py starts, so an explicit
+      # TEST_DATABASE_URL can point at either. This service is no longer the
+      # only way to get a test DB — running pytest with docker available and no
+      # URL set now starts a private one per process.
+      POSTGRES_USER: ci_test
+      POSTGRES_PASSWORD: ci_test_password_secure # pragma: allowlist secret
+      POSTGRES_DB: w2v_orchestrator_ci
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    ports:
+      - "5452:5432"
+    # postgres:18 keeps its data in a versioned subdir (/var/lib/postgresql/18/
+    # docker) and refuses to start if you mount over the old .../data path — the
+    # same trap the app service above documents. The image's own guidance is a
+    # single mount at /var/lib/postgresql, so put the tmpfs there.
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ci_test -d w2v_orchestrator_ci"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    networks:
+      - orchestrator-network
+
+  # ============================================================================
+  # Redis Cache
+  # ============================================================================
+  w2v-orchestrator-redis:
+    image: redis:7-alpine
+    container_name: w2v_orchestrator_redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6390:6379"
+    volumes:
+      - w2v_orchestrator_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orchestrator-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # MinIO (Object Storage)
+  # ============================================================================
+  w2v-orchestrator-minio:
+    image: minio/minio:RELEASE.2025-02-28T09-55-16Z
+    container_name: w2v_orchestrator_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9050:9000"
+      - "9051:9001"
+    volumes:
+      - w2v_orchestrator_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orchestrator-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # W2V Orchestrator API
+  # ============================================================================
+  w2v-orchestrator-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: w2v_orchestrator_api
+    environment:
+      # Application
+      ENVIRONMENT: production
+      APP_NAME: W2V Orchestrator Service
+      APP_VERSION: 0.1.0
+
+      # Database
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-changeme}@w2v_orchestrator_postgres:5432/w2v_orchestrator
+      POSTGRES_POOL_MIN_SIZE: 2
+      POSTGRES_POOL_MAX_SIZE: 10
+
+      # Redis
+      REDIS_URL: redis://w2v-orchestrator-redis:6379/0
+      REDIS_MAX_CONNECTIONS: 10
+
+      # API
+      API_HOST: 0.0.0.0
+      API_PORT: 6300
+      API_DEBUG: "false"
+      API_RELOAD: "false"
+      API_CORS_ORIGINS: "http://localhost:*,http://127.0.0.1:*"
+
+      # Auth
+      AUTH_ENABLED: "false"
+      DEFAULT_TENANT_ID: 0195f48b-d000-7000-8000-000000000001
+      # Required, no code default: compose refuses to start without it.
+      DOWNSTREAM_LICENSE_TOKEN: ${DOWNSTREAM_LICENSE_TOKEN:?set DOWNSTREAM_LICENSE_TOKEN}
+
+      # Storage
+      STORAGE_BACKEND: minio
+      STORAGE_MINIO_ENDPOINT: w2v-orchestrator-minio:9000
+      STORAGE_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      STORAGE_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      STORAGE_MINIO_BUCKET: w2v-orchestrator
+
+      # Pipeline
+      PIPELINE_MODE: gateway
+      PIPELINE_MAX_CONCURRENT_PIPELINES: 10
+
+      # Logging
+      LOG_LEVEL: INFO
+      LOG_JSON_LOGS: "false"
+    ports:
+      - "6300:6300"
+    volumes:
+      - w2v_orchestrator_data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      w2v_orchestrator_postgres:
+        condition: service_healthy
+      w2v-orchestrator-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6300/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - orchestrator-network
+    restart: unless-stopped
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  orchestrator-network:
+    driver: bridge
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  w2v_orchestrator_postgres_data:
+    name: w2v_orchestrator_postgres_data
+  w2v_orchestrator_redis_data:
+    name: w2v_orchestrator_redis_data
+  w2v_orchestrator_minio_data:
+    name: w2v_orchestrator_minio_data
+  w2v_orchestrator_data:
+    name: w2v_orchestrator_data

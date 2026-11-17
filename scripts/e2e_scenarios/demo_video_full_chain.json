@@ -1,0 +1,89 @@
+{
+  "_doc": "MANUAL full-chain demo_video validation (NOT wired into the per-promote matrix — too heavy/flaky, by design, like website_review's full render). Runs the WHOLE blueprint with NO pause: demo_video_gen drives bdd_playwright_service, then demo_video_narrate (TTS) ∥ demo_video_record (frontend_test_runner Playwright recording) fan out and join on clip-<n>, demo_video_compile muxes them into an MP4, demo_video_encode_master runs the mastering critic->advisor loop, growth_bundle finishes. Proves the record->compile->MP4 tail the gen-only guard skips. Stage assertions prove (a) gen produced >=1 narration line with text, (b) record produced >=1 recorded interaction clip with a video_url, (c) narrate produced >=1 narration audio clip, (d) compile emitted a non-empty MP4 artifact_url, (e) encode_master ran the ENABLED critic loop (encode_critic.score is a real number in [1,5]). example.com is the same IANA-reserved stable target the gen guard uses. MASTERING LOOP: run.config_overrides enables the loop via a NON-EMPTY mastering.critic dict (bool({}) is False, so an empty dict would leave the loop disabled — presence-is-opt-in). score_threshold=4.9 is deliberately high so the critic's real sub-threshold score never converges on pass 1, forcing the mux-mastering-advisor (optimizer) to run once — a single live run therefore exercises BOTH the encode-critic AND the mux-mastering-advisor worker. iterations=2 is REQUIRED for the advisor to run at all: iterations maps to loop_engine max_passes (clamped [1,2]) and the optimizer only fires inside `while passes < max_passes`, so iterations=1 (max_passes=1) would run the critic ONCE and NEVER the advisor. Two passes = one critic + one advisor + one re-score; the re-compile is hard-bounded to at most one, no blow-up. CAVEAT — the encode_master.score assertion below is HONEST but WEAK: on a worker error the stage SOFT-DEGRADES and STILL populates encode_critic (score==threshold, empty provenance), so a passing numeric_gte proves only that the enabled path executed, NOT that the critic/advisor really ran. The AUTHORITATIVE proof that both workers ran (not the gemma soft-degrade) is the ORCHESTRATOR POD LOG: the ABSENCE of the 'encode-critic worker error' and 'mux-mastering-advisor error' warnings, observed out-of-band during the run.",
+  "project": {
+    "type": "demo_video",
+    "title": "e2e-demo-video-full-chain",
+    "brief": {
+      "target_url": "https://example.com",
+      "max_scenarios_per_feature": 2
+    },
+    "voice": {
+      "descriptor": "clear, instructional, calm",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "deliverables": [
+      {
+        "name": "Demo video 16x9",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 60
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {"mastering": {"critic": {"iterations": 2, "score_threshold": 4.9}}}
+  },
+  "expect_terminal_status": ["completed"],
+  "expect_no_degradation_codes": ["duration_out_of_tolerance", "duration_not_ordered"],
+  "expect_stage_assertions": [
+    {
+      "stage": "demo_video_gen",
+      "status": "completed",
+      "checks": [
+        {"type": "distinct_count_gte", "path": "lines[].id", "value": 1},
+        {"type": "nonempty", "path": "lines[].text"}
+      ]
+    },
+    {
+      "stage": "demo_video_record",
+      "status": "completed",
+      "checks": [
+        {"type": "distinct_count_gte", "path": "clips[].line_id", "value": 1},
+        {"type": "nonempty", "path": "clips[].video_url"}
+      ]
+    },
+    {
+      "stage": "demo_video_narrate",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "clips[].artifact_url"}
+      ]
+    },
+    {
+      "stage": "demo_video_compile",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "artifact_url"},
+        {"_doc": "MASTERING VERDICT, added 2026-09-13 (wave 7). The compiler measures a whole verdict block on the real rendered file and emits it on `demo_video_compile.mastering`; until now the harness read NONE of it. Only ONE key is ASSERTED and the ranking is deliberate. `av_gap_seconds` = seconds of delivered NARRATION the delivered PICTURE does not cover, signed (positive = picture short, negative = picture long), which is why it needs `numeric_abs_lte` and not `numeric_gte`. A post-fix master measured -21 MICROseconds; 0.5s is ~24000x that and still less than one spoken clause, so it fails a real A/V desync and cannot fail a healthy master on rounding. An ABSENT value FAILS by design (an unmeasured gap is not a gap of zero). ⛔ NOT ARMED, and why, each one measured: `gate_pass` is false on 136/136 rows; `colorspace_ok` fails 23.3%% of n=136 on a defect fixed hours before this change; `cfr_ok` is ADVISORY by the pipeline's own design and never clears `gate_pass`. Arming any of them produces an instrument that is red by construction, i.e. one everybody learns to ignore. They are RECORDED instead (`record` prints and never fails), so the numbers land in every run log and a band can be derived from real data rather than guessed.", "type": "numeric_abs_lte", "path": "mastering.av_gap_seconds", "value": 0.5},
+        {"type": "record", "path": "mastering.gate_pass"},
+        {"type": "record", "path": "mastering.colorspace_ok"},
+        {"type": "record", "path": "mastering.cfr_ok"},
+        {"type": "record", "path": "mastering.duplicate_frame_ratio"}
+      ]
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "status": "completed",
+      "checks": [
+        {"type": "numeric_gte", "path": "encode_critic.score", "value": 1.0}
+      ]
+    }
+  ],
+  "_pixel_doc": "The two signalstats/min_frames checks probe the COMPILE draft. The five media ACCEPTANCE checks below probe the stage that actually ships the master, `demo_video_encode_master`: it downloads + decodes, carries a non-silent audio stream (ffmpeg volumedetect mean/peak dBFS -- nothing in this corpus checked audio at all before), lands at >=1280x720 and 16:9 as ENCODED (not as self-reported by the stage), and has a VIDEO stream and an AUDIO stream measured SEPARATELY -- never the container, whose duration is the MAX over streams and so can never refute a truncated video track. `duration_within_tolerance` is DISARMED (`\"enabled\": false`); flip it to true to compare the delivered length against the 60s ordered at the pipeline's own +/-10%.",
+  "expect_pixel_checks": [
+    {"stage": "demo_video_compile", "type": "signalstats_delta", "path": "artifact_url", "bounds": [16, 235], "yavg_spread_max": 40, "min_luma_spread": 24},
+    {"stage": "demo_video_compile", "type": "min_frames", "path": "artifact_url", "min_frames": 1},
+    {"stage": "demo_video_encode_master", "type": "artifact_reachable", "path": "artifact_url", "min_bytes": 4096},
+    {"stage": "demo_video_encode_master", "type": "audio_present", "path": "artifact_url", "true_peak_ceiling_dbtp": 0.0},
+    {"stage": "demo_video_encode_master", "type": "resolution", "path": "artifact_url", "min_width": 1280, "min_height": 720, "aspect": "16x9"},
+    {"stage": "demo_video_encode_master", "type": "stream_durations", "path": "artifact_url", "require_video": true, "require_audio": true, "min_video_seconds": 30, "min_audio_seconds": 30, "max_stream_skew_seconds": 0.5},
+    {"stage": "demo_video_encode_master", "type": "duration_within_tolerance", "path": "artifact_url", "enabled": false, "ordered_seconds": 60},
+    {
+      "stage": "demo_video_encode_master",
+      "type": "declared_vs_measured",
+      "path": "artifact_url",
+      "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+    }
+  ]
+}

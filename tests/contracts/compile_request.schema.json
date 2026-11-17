@@ -1,0 +1,1635 @@
+{
+  "$defs": {
+    "AccentCue": {
+      "description": "A one-shot SFX placed at an offset WITHIN a shot's local timeline.",
+      "properties": {
+        "at_seconds": {
+          "description": "Offset from the shot start, seconds",
+          "minimum": 0,
+          "title": "At Seconds",
+          "type": "number"
+        },
+        "gain_db": {
+          "default": 0.0,
+          "description": "Level trim (dB) applied to this cue",
+          "title": "Gain Db",
+          "type": "number"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "at_seconds"
+      ],
+      "title": "AccentCue",
+      "type": "object"
+    },
+    "AmbientCue": {
+      "description": "A continuous ambient bed segment on the GLOBAL video timeline.\n\n``end_seconds=None`` runs the bed to the end of the video. Multiple cues\nlet different sections carry different ambience; today the orchestrator\nemits a single full-span cue, but the list shape leaves room to grow\nwithout a schema change.\n\nThe four ``duck_*``/``sidechain_hpf_hz`` knobs below shape the sidechain\nduck the SUMMED ambient bus gets under narration. They mirror ``MusicBed``'s\nbreathing-duck defaults and bounds EXACTLY (identical names so the renderer\nreads music and ambient uniformly) because the old ambient-only duck was a\nDEAD filter: it hardcoded ``threshold=0.125:release=1000``, where 0.125 is an\nabsolute linear key level a -18 LUFS narration bus never crosses (so the\ncompressor barely opened) and a 1000 ms release pinned the bed flat through\nevery VO gap \u2014 an ambient bed never breathed. These defaults give it the\nsame fast, HPF'd-key, short-release breathing shape ``MusicBed`` ships. No\n``duck_db``/ratio knob: the ambient duck runs at a fixed ratio (mirroring\n``MusicBed``'s effective ratio for its default ``duck_db=-12``), keeping the\nsurface tight. Presence-is-opt-in: a caller sending none of these still gets\nthe shipped breathing default.",
+      "properties": {
+        "ambient_offset_lu": {
+          "anyOf": [
+            {
+              "maximum": 40,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How many LU BELOW the measured narration this ambient cue should sit. When set, the compiler MEASURES the VO bus and this asset and computes the gain; ``gain_db`` is then the fallback used only if measurement fails.",
+          "title": "Ambient Offset Lu"
+        },
+        "duck_attack_ms": {
+          "default": 30.0,
+          "description": "Sidechain attack, ms \u2014 how fast the bed dips when narration starts",
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Duck Attack Ms",
+          "type": "number"
+        },
+        "duck_open_lu_below_vo": {
+          "anyOf": [
+            {
+              "maximum": 40,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When set, the sidechain open threshold is derived from the MEASURED VO level instead of the absolute ``duck_threshold``.",
+          "title": "Duck Open Lu Below Vo"
+        },
+        "duck_release_ms": {
+          "default": 700.0,
+          "description": "Sidechain release, ms \u2014 how fast the bed swells back once narration stops. 700 ms is long enough that inter-WORD gaps do NOT recover (which is what made a shorter release pump once per syllable) and short enough that a real inter-SENTENCE pause still breathes",
+          "maximum": 5000,
+          "minimum": 10,
+          "title": "Duck Release Ms",
+          "type": "number"
+        },
+        "duck_threshold": {
+          "default": 0.03,
+          "description": "Sidechain open threshold as an ABSOLUTE linear key level (0.03 ~= -30 dBFS), fed straight to ffmpeg sidechaincompress. Ordinary narration must cross it or the compressor never opens and the bed never ducks",
+          "maximum": 1.0,
+          "minimum": 0.001,
+          "title": "Duck Threshold",
+          "type": "number"
+        },
+        "end_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "End offset, seconds; None = run to end of video",
+          "title": "End Seconds"
+        },
+        "gain_db": {
+          "default": -24.0,
+          "description": "Bed level under narration, dB",
+          "title": "Gain Db",
+          "type": "number"
+        },
+        "sidechain_hpf_hz": {
+          "default": 150.0,
+          "description": "High-pass applied to the sidechain KEY (not the audible narration) so the duck triggers on speech presence rather than rumble / plosives / room tone",
+          "maximum": 2000,
+          "minimum": 20,
+          "title": "Sidechain Hpf Hz",
+          "type": "number"
+        },
+        "start_seconds": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Start Seconds",
+          "type": "number"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "AmbientCue",
+      "type": "object"
+    },
+    "Callout": {
+      "description": "One per-shot callout bound to a clicked element (ORCH-3.2 directed footage).\n\nA ``badge`` draws a tinted numbered disc glued to the element's top-left\ncorner (its ``label`` is the short number/text centered on the disc); a\n``label`` draws a short caption anchored to the element bbox; a ``spotlight``\ndims the bbox-complement to isolate the element; an ``arrow`` overlays a small\ntriangle sprite pointing at the element. ``bbox`` is ``(x, y, w, h)`` in\nRECORDED source pixels \u2014 the SAME convention as ``FocusKey.bbox`` \u2014 so the\nrenderer remaps it through the same fit transform before compositing. Callouts\nride the PRE-zoom canvas so a focus punch-in magnifies them with the element.",
+      "properties": {
+        "at": {
+          "description": "Shot-local onset seconds",
+          "minimum": 0,
+          "title": "At",
+          "type": "number"
+        },
+        "bbox": {
+          "description": "Clicked-element region (x, y, w, h) in RECORDED source pixels (same convention as FocusKey.bbox)",
+          "maxItems": 4,
+          "minItems": 4,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Bbox",
+          "type": "array"
+        },
+        "label": {
+          "default": "",
+          "description": "L3 callout copy; badge \u2192 short number/text",
+          "maxLength": 120,
+          "title": "Label",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "badge",
+            "label",
+            "spotlight",
+            "arrow"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "at",
+        "type",
+        "bbox"
+      ],
+      "title": "Callout",
+      "type": "object"
+    },
+    "CaptionCue": {
+      "description": "One word- or phrase-timed caption, in the SHOT's local timeline (seconds).\n\n``start``/``end`` are shot-local; the renderer maps them onto the film bus\n(applying the shot's ``speed`` retime and clamping to the shot's on-screen\nwindow) when it builds the burned-in ASS subtitle track. ``end`` must be\nstrictly greater than ``start``.\n\n``words`` \u2014 the cue's per-word timings \u2014 is optional; it powers karaoke\n``{\\k}`` word-highlight when a compile sets ``captions_karaoke`` and renders\n``burned_in``. ``None``/absent \u21d2 the whole cue highlights as one phrase.",
+      "properties": {
+        "end": {
+          "description": "Cue offset, shot-local seconds",
+          "exclusiveMinimum": 0,
+          "title": "End",
+          "type": "number"
+        },
+        "start": {
+          "description": "Cue onset, shot-local seconds",
+          "minimum": 0,
+          "title": "Start",
+          "type": "number"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "words": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/CaptionWord"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional per-word timings (shot-local) for karaoke highlight. Used only when the compile sets `captions_karaoke` in `burned_in` mode; None (default) \u21d2 the cue highlights as a single phrase.",
+          "title": "Words"
+        }
+      },
+      "required": [
+        "text",
+        "start",
+        "end"
+      ],
+      "title": "CaptionCue",
+      "type": "object"
+    },
+    "CaptionWord": {
+      "description": "One word's shot-local ``[start, end)`` timing, for karaoke ``{\\k}`` highlight.\n\nShot-local seconds, mapped onto the film bus with the SAME offset/\u00f7speed/clamp\nmath as the parent cue. Only consumed when a compile requests\n``captions_karaoke`` in ``burned_in`` mode; otherwise ignored.",
+      "properties": {
+        "end": {
+          "description": "Word offset, shot-local seconds",
+          "exclusiveMinimum": 0,
+          "title": "End",
+          "type": "number"
+        },
+        "start": {
+          "description": "Word onset, shot-local seconds",
+          "minimum": 0,
+          "title": "Start",
+          "type": "number"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "start",
+        "end"
+      ],
+      "title": "CaptionWord",
+      "type": "object"
+    },
+    "ColorAdjust": {
+      "description": "Per-shot colour grade applied as an ffmpeg ``eq`` pass.\n\nEvery numeric knob defaults to its identity value (a grade that changes\nnothing), so an all-default ``ColorAdjust`` with no ``preset`` emits no\nfilter at all and the render stays byte-identical to before this field\nexisted. ``preset`` expands to a fixed grade (warm/cool/bw/vivid/cinematic);\nany explicitly-set numeric field overrides the matching preset component.",
+      "properties": {
+        "brightness": {
+          "default": 0.0,
+          "description": "Additive brightness (-1..1; 0 = unchanged)",
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Brightness",
+          "type": "number"
+        },
+        "contrast": {
+          "default": 1.0,
+          "description": "Contrast multiplier (0..2; 1 = unchanged)",
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Contrast",
+          "type": "number"
+        },
+        "gamma": {
+          "default": 1.0,
+          "description": "Gamma correction (0.1..10; 1 = unchanged)",
+          "maximum": 10,
+          "minimum": 0.1,
+          "title": "Gamma",
+          "type": "number"
+        },
+        "preset": {
+          "anyOf": [
+            {
+              "enum": [
+                "warm",
+                "cool",
+                "bw",
+                "vivid",
+                "cinematic"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Named grade expanded to a fixed eq; explicitly-set numeric fields override the matching preset component. None = no preset.",
+          "title": "Preset"
+        },
+        "saturation": {
+          "default": 1.0,
+          "description": "Saturation multiplier (0..3; 1 = unchanged, 0 = greyscale)",
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Saturation",
+          "type": "number"
+        }
+      },
+      "title": "ColorAdjust",
+      "type": "object"
+    },
+    "CursorKey": {
+      "description": "One keyframe of a synthetic cursor path (ORCH-3.2 directed footage).\n\n``t`` is the shot-local second; ``x``/``y`` are the cursor tip position in\nthe RENDER frame's pixel space (the same frame-pixel space the VP-2 capture\nproducer emits \u2014 CSS px x capture_scale). ``click`` marks a click at this\nkeyframe, which triggers a brief expanding click-pulse ring. Between\nkeyframes the renderer smoothstep-eases the position. An absent\n``cursor_track`` (the default) synthesises no cursor and is byte-identical.",
+      "properties": {
+        "click": {
+          "default": false,
+          "description": "A click fires here \u2192 click-pulse ring",
+          "title": "Click",
+          "type": "boolean"
+        },
+        "t": {
+          "description": "Shot-local time of this keyframe, seconds",
+          "minimum": 0,
+          "title": "T",
+          "type": "number"
+        },
+        "x": {
+          "description": "Cursor-tip x in render-frame pixels",
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "description": "Cursor-tip y in render-frame pixels",
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": [
+        "t",
+        "x",
+        "y"
+      ],
+      "title": "CursorKey",
+      "type": "object"
+    },
+    "FinishProfile": {
+      "description": "Per-job finishing/delivery overrides (VC-5): the brand letterbox colour.\n\nPresence-is-opt-in, exactly like ``MasteringProfile``: an absent ``finish``\n(or an all-default one) changes no filter string, so the render stays\nbyte-identical to before this field existed. The colour folds onto the\nper-shot filter chain \u2014 the final concat is a stream copy, so there is no\nwhole-film finishing pass to hang it on.\n\nA ``broadcast_safe`` legal-luma flag was designed here and CUT: a pre-encode\nclamp cannot guarantee a decoded 16..235 master (libx264 ringing around text\nre-introduces illegal values, worsening with CRF) and the flag would have\nbeen a lie. See the note in ``renderer`` above ``_pad_color``.",
+      "properties": {
+        "grade": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GradeSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whole-film colour grade (VC-5): a single post-concat re-encode over the delivered timeline. None \u2014 or a disabled/all-identity grade \u2014 is a no-op, byte-identical to before this field existed."
+        },
+        "letterbox_color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Brand letterbox/pillarbox fill as #RRGGBB (or #RRGGBBAA), e.g. '#101820'. None (default) keeps the service's render_bg_color. The hex pattern is also the injection guard \u2014 this value is interpolated into the ffmpeg filtergraph's pad `color=` option.",
+          "title": "Letterbox Color"
+        }
+      },
+      "title": "FinishProfile",
+      "type": "object"
+    },
+    "FocusKey": {
+      "description": "One keyframe of a focus/auto-zoom track (ORCH-3.2 directed footage).\n\n``bbox`` is ``(x, y, w, h)`` in RENDER-frame pixel space \u2014 the region the\npunch-in should frame (a clicked control, a highlighted panel). The renderer\neases a ``zoompan`` punch-in centered on the bbox and back out. An absent\n``focus_track`` (the default) applies no zoom and is byte-identical.",
+      "properties": {
+        "bbox": {
+          "description": "Focus region (x, y, w, h) in render-frame pixels",
+          "maxItems": 4,
+          "minItems": 4,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Bbox",
+          "type": "array"
+        },
+        "t": {
+          "description": "Shot-local time of this keyframe, seconds",
+          "minimum": 0,
+          "title": "T",
+          "type": "number"
+        }
+      },
+      "required": [
+        "t",
+        "bbox"
+      ],
+      "title": "FocusKey",
+      "type": "object"
+    },
+    "GradeSpec": {
+      "description": "Whole-film colour grade applied as ONE post-concat re-encode pass (VC-5).\n\nUnlike the per-shot ``ColorAdjust`` (which folds an ``eq`` onto each segment\nbefore the stream-copy concat), this grades the ENTIRE finished timeline in a\nsingle pass over the delivery master \u2014 a film-wide \"look\" with split-toning,\nvignette, grain, sharpen, glow and an optional broadcast-legal clamp.\n\nPresence-is-opt-in and identity-is-no-op: ``enabled=False`` (the default), or\nan ``enabled`` grade whose every knob sits at its identity default, emits an\nEMPTY filter chain (``renderer._grade_vf`` \u2192 ``\"\"``), so the compile keeps the\n``-c copy`` fast path and stays byte-identical to a pre-VC-5 render. Only a\ngrade that actually moves a knob triggers the whole-film re-encode.\n\nField names + clamps mirror the orchestrator's ``finish.GradeSpec`` byte-for-\nbyte so a request round-trips unchanged. Tints are accepted permissively (3-\nor 6-digit hex, leading ``#`` optional) \u2014 a stricter pattern here would 422 a\nvalid orchestrator payload; an unparseable tint degrades to a neutral (no-op)\nsplit-tone rather than rejecting the compile.",
+      "properties": {
+        "broadcast_safe": {
+          "default": false,
+          "description": "Append a best-effort legal-range (16..235) luma clamp as the LAST filter \u2014 the colour analog of the true-peak limiter, not a hard guarantee (x264 ringing can re-introduce a few illegal codes).",
+          "title": "Broadcast Safe",
+          "type": "boolean"
+        },
+        "contrast": {
+          "default": 1.0,
+          "description": "Whole-film contrast multiplier (1 = unchanged)",
+          "maximum": 1.4,
+          "minimum": 0.8,
+          "title": "Contrast",
+          "type": "number"
+        },
+        "enabled": {
+          "default": false,
+          "description": "Master opt-in; False (default) emits no grade (byte-identical)",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "gamma": {
+          "default": 1.0,
+          "description": "Whole-film gamma (1 = unchanged)",
+          "maximum": 2.0,
+          "minimum": 0.5,
+          "title": "Gamma",
+          "type": "number"
+        },
+        "glow": {
+          "default": 0.0,
+          "description": "Soft bloom/glow amount (0 = off)",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Glow",
+          "type": "number"
+        },
+        "grade_intensity": {
+          "default": 1.0,
+          "description": "Global dry/wet on the whole grade (1 = full, 0 = identity/no-op)",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Grade Intensity",
+          "type": "number"
+        },
+        "grain": {
+          "default": 0.0,
+          "description": "Film-grain noise amount (0 = off)",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Grain",
+          "type": "number"
+        },
+        "highlight_tint": {
+          "default": "#ffffff",
+          "description": "Split-tone colour pushed into the highlights; #ffffff (default) = no tint",
+          "title": "Highlight Tint",
+          "type": "string"
+        },
+        "look": {
+          "default": "none",
+          "description": "Named base look expanded to a fixed eq (warm/cool/bw/vivid/cinematic reuse the per-shot presets); a free string \u2014 an unknown look is a no-op base, not a 422. 'none' (default) adds no base grade.",
+          "title": "Look",
+          "type": "string"
+        },
+        "lut_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional 3D-LUT reference. Carried on the contract + report for forward-compat; LUT application is not performed by this service.",
+          "title": "Lut Url"
+        },
+        "match_sources": {
+          "default": false,
+          "description": "Bias the grade's luma/saturation midpoints toward the delivered film's own measured signalstats (best-effort; a measurement miss silently falls back to the un-biased grade).",
+          "title": "Match Sources",
+          "type": "boolean"
+        },
+        "saturation": {
+          "default": 1.0,
+          "description": "Whole-film saturation multiplier (1 = unchanged)",
+          "maximum": 1.4,
+          "minimum": 0.6,
+          "title": "Saturation",
+          "type": "number"
+        },
+        "shadow_tint": {
+          "default": "#000000",
+          "description": "Split-tone colour pushed into the shadows; #000000 (default) = no shadow tint",
+          "title": "Shadow Tint",
+          "type": "string"
+        },
+        "sharpen": {
+          "default": 0.0,
+          "description": "Output sharpening amount (0 = off)",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Sharpen",
+          "type": "number"
+        },
+        "temperature": {
+          "default": 0.0,
+          "description": "Warm/cool bias (-1 cool .. +1 warm; 0 = neutral), applied as a per-channel gamma",
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "vignette": {
+          "default": 0.0,
+          "description": "Corner darkening amount (0 = off)",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Vignette",
+          "type": "number"
+        }
+      },
+      "title": "GradeSpec",
+      "type": "object"
+    },
+    "MasteringProfile": {
+      "description": "Per-job overrides for the encode/delivery master (VC-2, contract C11).\n\nEvery field is optional; an omitted/out-of-range value degrades to the\nservice default (never a 5xx) via the same clamp discipline as the compile\n``tags``. These fold into the tag-resolution path in the compile route, so\nthe picture master can be retargeted per run without a redeploy.",
+      "properties": {
+        "bitrate_mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Rate control: auto (CRF only) / vbv / cbr / capped",
+          "title": "Bitrate Mode"
+        },
+        "colorspace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Delivery colorspace tag: bt709/bt601/bt2020/srgb/none",
+          "title": "Colorspace"
+        },
+        "crf": {
+          "anyOf": [
+            {
+              "maximum": 51,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Per-job libx264 CRF override",
+          "title": "Crf"
+        },
+        "deband": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Conditional deband policy: auto/on/off",
+          "title": "Deband"
+        },
+        "loudness_target": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Loudness-master integrated target (LUFS); clamped to [-30, -5]",
+          "title": "Loudness Target"
+        },
+        "maxrate": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "VBV peak bitrate (e.g. '12M'); only used under a VBV mode",
+          "title": "Maxrate"
+        },
+        "platform": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Target delivery platform (youtube/instagram/tiktok/x/web)",
+          "title": "Platform"
+        },
+        "true_peak": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Loudness-master true-peak ceiling (dBTP); clamped to [-9, 0]",
+          "title": "True Peak"
+        }
+      },
+      "title": "MasteringProfile",
+      "type": "object"
+    },
+    "MusicBed": {
+      "description": "Continuous music under the whole video, ducked beneath narration.\n\nRequest-level (not per-shot) because it spans the entire timeline \u2014 a\nper-shot music input would restart at every cut. Looped to fill the video,\nfaded in/out, and sidechain-ducked under the concatenated narration.\n\nThe duck is a ``sidechaincompress`` keyed off the narration bus. ``duck_db``\nsets its DEPTH (mapped to the compression ratio); the four knobs below set\nits TIMING and SENSITIVITY. Their defaults are the shipped behaviour \u2014 a\ncaller that sends none of them still gets a duck that opens on ordinary\nnarration and breathes back in the gaps.",
+      "properties": {
+        "duck_attack_ms": {
+          "default": 30.0,
+          "description": "Sidechain attack, ms \u2014 how fast the bed dips when narration starts",
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Duck Attack Ms",
+          "type": "number"
+        },
+        "duck_db": {
+          "default": -12.0,
+          "description": "Advisory extra attenuation under narration; tunes the sidechain compressor",
+          "title": "Duck Db",
+          "type": "number"
+        },
+        "duck_open_lu_below_vo": {
+          "anyOf": [
+            {
+              "maximum": 40,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When set, the sidechain open threshold is derived from the MEASURED VO level instead of the absolute ``duck_threshold``.",
+          "title": "Duck Open Lu Below Vo"
+        },
+        "duck_release_ms": {
+          "default": 700.0,
+          "description": "Sidechain release, ms \u2014 how fast the bed swells back once narration stops. 700 ms is long enough that inter-WORD gaps do NOT recover (which is what made a shorter release pump once per syllable) and short enough that a real inter-SENTENCE pause still breathes",
+          "maximum": 5000,
+          "minimum": 10,
+          "title": "Duck Release Ms",
+          "type": "number"
+        },
+        "duck_threshold": {
+          "default": 0.03,
+          "description": "Sidechain open threshold as an ABSOLUTE linear key level (0.03 ~= -30 dBFS), fed straight to ffmpeg sidechaincompress. Ordinary narration must cross it or the compressor never opens and the bed never ducks. A measured / VO-relative threshold is a documented follow-up, not this knob",
+          "maximum": 1.0,
+          "minimum": 0.001,
+          "title": "Duck Threshold",
+          "type": "number"
+        },
+        "fade_in_s": {
+          "default": 1.5,
+          "minimum": 0,
+          "title": "Fade In S",
+          "type": "number"
+        },
+        "fade_out_s": {
+          "default": 2.5,
+          "minimum": 0,
+          "title": "Fade Out S",
+          "type": "number"
+        },
+        "gain_db": {
+          "default": -18.0,
+          "description": "Resting (un-ducked) music level, dB",
+          "title": "Gain Db",
+          "type": "number"
+        },
+        "music_offset_lu": {
+          "anyOf": [
+            {
+              "maximum": 40,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How many LU BELOW the measured narration the bed should sit. When set, the compiler MEASURES the VO bus and the music asset and computes the gain; ``gain_db`` is then the fallback used only if measurement fails.",
+          "title": "Music Offset Lu"
+        },
+        "sidechain_hpf_hz": {
+          "default": 150.0,
+          "description": "High-pass applied to the sidechain KEY (not the audible narration) so the duck triggers on speech presence rather than rumble / plosives / room tone",
+          "maximum": 2000,
+          "minimum": 20,
+          "title": "Sidechain Hpf Hz",
+          "type": "number"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "MusicBed",
+      "type": "object"
+    },
+    "OverlayClip": {
+      "description": "An animated graphic with a REAL ALPHA CHANNEL composited ON TOP of the shot.\n\nThis is the true overlay layer \u2014 a lower-third that flies in over drone\nfootage, a persistent logo bug \u2014 as opposed to a full-frame animated card,\nwhich needs nothing new (it is an ordinary ``Shot`` with a ``video_url``).\n\n``url`` is the same reference shape as every other asset (presigned MinIO\nhttp(s), ``file://``, or a bare local path) and is fetched through the same\nper-job dedupe, so one logo bug reused on twenty shots downloads once. An\nunfetchable overlay DROPS that overlay and logs; it never fails the compile.\n\nTHE PRODUCER SHIPS VP9 WEBM WITH ALPHA. Alpha does not ride in the pixel\nformat \u2014 a correct file reports ``pix_fmt=yuv420p`` and carries the WebM\ncontainer tag ``alpha_mode=1``, with the alpha plane in ``BlockAdditional``\nside data. Anything that \"validates alpha\" by looking for ``yuva420p`` will\nreject every correct build. See ``renderer._inject_overlay_clips`` for the\ndecoder trap this costs on the ffmpeg side.\n\nTimes are SHOT-LOCAL seconds on the shot's own (pre-``speed``) timeline \u2014\nsee ``retime_with_speed``.",
+      "properties": {
+        "duration_seconds": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 3600.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How long the overlay stays on screen, seconds. None (default) = the overlay's own natural length, after which it disappears (it does NOT freeze on its last frame).",
+          "title": "Duration Seconds"
+        },
+        "opacity": {
+          "default": 1.0,
+          "description": "Uniform multiplier on the graphic's OWN alpha (1.0 = default, the authored alpha untouched and byte-identical; 0 = fully transparent).",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Opacity",
+          "type": "number"
+        },
+        "retime_with_speed": {
+          "default": true,
+          "description": "Whether ``start_seconds``/``duration_seconds`` are read on the shot's SOURCE timeline (True, default) or on the RENDERED one (False). The overlay is a separate ffmpeg input and is NOT touched by the shot's ``speed`` retime, so True divides both times by ``speed`` \u2014 a cue authored against the source stays glued to the frame it was authored for. False pins the overlay to wall-clock output time instead (a logo bug that must appear 2s into the delivered segment regardless of how the picture was retimed). At ``speed=1.0`` the two are identical.",
+          "title": "Retime With Speed",
+          "type": "boolean"
+        },
+        "scale": {
+          "default": "fit",
+          "description": "'fit' (default) scales the graphic to fit INSIDE the render canvas preserving its aspect (no crop, no pad \u2014 the alpha carries the framing), so one 1920x1080 authored asset lands correctly at every output tier. 'native' composites it at its authored pixel size.",
+          "enum": [
+            "fit",
+            "native"
+          ],
+          "title": "Scale",
+          "type": "string"
+        },
+        "start_seconds": {
+          "default": 0.0,
+          "description": "Shot-local onset, seconds; 0 (default) = visible from the shot's first frame",
+          "maximum": 3600.0,
+          "minimum": 0,
+          "title": "Start Seconds",
+          "type": "number"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "x": {
+          "default": "0",
+          "description": "ffmpeg overlay x expression in CANVAS pixels \u2014 a bare number, or an expression over W/H (canvas) and w/h (overlay), e.g. '(W-w)/2' to centre or 'W-w-64' to pin right. Charset-constrained (no ':' ',' or quotes) because it is interpolated into the filtergraph.",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_ .()+*/-]*$",
+          "title": "X",
+          "type": "string"
+        },
+        "y": {
+          "default": "0",
+          "description": "ffmpeg overlay y expression in canvas pixels; same charset rules as ``x``",
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_ .()+*/-]*$",
+          "title": "Y",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "OverlayClip",
+      "type": "object"
+    },
+    "Shot": {
+      "properties": {
+        "adjust": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColorAdjust"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional per-shot colour grade (ffmpeg eq), applied after scale/pad. None \u2014 or an all-default grade with no preset \u2014 is a no-op, byte-identical to before this field existed."
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShotAudio"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Per-shot primary-audio gain/mute/fade. None is a no-op \u2014 byte-identical."
+        },
+        "audio_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Narration audio muxed over this shot; sets the shot duration",
+          "title": "Audio Url"
+        },
+        "callouts": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Callout"
+              },
+              "maxItems": 6,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional per-shot callouts (badge/label/spotlight/arrow) bound to the clicked element bbox in recorded px; None/[] \u21d2 no-op, byte-identical. The renderer composites at most the first few (see _CALLOUT_MAX_PER_SHOT).",
+          "title": "Callouts"
+        },
+        "caption": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional burned-in lower-third caption",
+          "title": "Caption"
+        },
+        "clip_anchor": {
+          "default": "start",
+          "description": "Where within a footage clip the shown window sits. 'start' (default) plays from the beginning (optionally after ``clip_lead_seconds``). 'end' shows the clip's SETTLED TAIL \u2014 the last ``duration`` seconds \u2014 so a slow app load / zoom-in at the head is skipped and only the final hero state (a fitted floor plan, a loaded page) appears. Zero leading load-in / white frames. Ignored for image/text shots.",
+          "enum": [
+            "start",
+            "end"
+          ],
+          "title": "Clip Anchor",
+          "type": "string"
+        },
+        "clip_lead_seconds": {
+          "default": 0.0,
+          "description": "For ``clip_anchor='start'``: seconds to skip at the head of the footage clip (trim the app's white load-in) before the shown window. Bounded so the remaining clip still covers the shot duration.",
+          "minimum": 0,
+          "title": "Clip Lead Seconds",
+          "type": "number"
+        },
+        "clip_out_seconds": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Source-timeline OUT-point, in seconds from the head of the footage clip. Together with ``clip_lead_seconds`` (the in-point) it names an explicit window: ``clip_lead_seconds=4.0, clip_out_seconds=7.5`` shows exactly 4.0s to 7.5s of the source. That is the only way to cut SEVERAL shots out of ONE long recording; without it the out-point is merely implied by ``seconds`` and every shot replays from the same in-point. Measured on the SOURCE timeline, so it is independent of ``speed`` (a 3.5s window at speed=2.0 renders as a 1.75s segment). Clamped to the real clip length; a window shorter than the shot's narration freeze-pads as usual. Must be greater than ``clip_lead_seconds``. Ignored for image/text shots. None (default) is a no-op, byte-identical to before this field existed.",
+          "title": "Clip Out Seconds"
+        },
+        "cursor_track": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/CursorKey"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Synthetic cursor path (ORCH-3.2): a brand-tinted disc overlaid on the shot, smoothstep-eased between keyframes, with a click-pulse ring on click keyframes. None (default) synthesises no cursor \u2014 byte-identical.",
+          "title": "Cursor Track"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Text drawn on a solid card when no image_url/video_url is given",
+          "title": "Description"
+        },
+        "fit": {
+          "default": "contain",
+          "description": "How the visual fills the frame. 'contain' (default) fits-inside + pads (letter/pillarbox) so nothing is cropped \u2014 for footage/slides/screenshots. 'cover' scales-to-fill + center-crops so the frame is full \u2014 for atmospheric AI-image backgrounds, killing the navy bars. 'scroll' fits a tall full-page screenshot to the frame width and pans it top\u2192bottom over the shot \u2014 for website-review captures that would otherwise letterbox to an unreadable vertical sliver.",
+          "enum": [
+            "contain",
+            "cover",
+            "scroll"
+          ],
+          "title": "Fit",
+          "type": "string"
+        },
+        "focus_track": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/FocusKey"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Auto-zoom track (ORCH-3.2): a punch-in eased onto the focus bbox and back out (ffmpeg zoompan), applied after fit/scale and before the look. None (default) applies no zoom \u2014 byte-identical to before this field.",
+          "title": "Focus Track"
+        },
+        "footage_viewport": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "(width, height) in pixels of the recorded source video the focus_track/cursor_track coordinates were captured in. When set and != the render canvas, the renderer remaps those coords through the same decrease-scale+centered-pad transform used to fit the source, so cursor/zoom land on-target at any output tier. None => coords assumed already in render-canvas pixels (legacy/identity).",
+          "title": "Footage Viewport"
+        },
+        "id": {
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "image_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Still frame held for the shot duration (slide PNG / screenshot / AI image)",
+          "title": "Image Url"
+        },
+        "line_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line Id"
+        },
+        "max_seconds": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Upper bound (clip length + freeze-pad ceiling) the orchestrator's reconcile_timeline stamped for a footage beat carrying over-length narration. Advisory unless the ``freeze_pad_cap`` render tag is on: when set, the freeze-pad DRIFT is bounded to end at ``max_seconds`` instead of ramping over the whole narration, so an over-narrated footage clip stops drifting at the ceiling and settles for the tail (the video still fills the full audio \u2014 no black, no truncated audio). None (default) or the tag off is a no-op \u2014 byte-identical to before this field existed.",
+          "title": "Max Seconds"
+        },
+        "overlay_clips": {
+          "description": "Animated graphics with a real alpha channel composited ON TOP of this shot's picture (lower-thirds, logo bugs), after the grade/titles. At most 2 per shot. Empty (default) is a no-op \u2014 no extra ffmpeg input, no extra filter, byte-identical to before this field existed. A FULL-FRAME animated card is not this: it is an ordinary shot with a ``video_url``.",
+          "items": {
+            "$ref": "#/$defs/OverlayClip"
+          },
+          "maxItems": 2,
+          "title": "Overlay Clips",
+          "type": "array"
+        },
+        "overlays": {
+          "description": "Burned-in text titles (drawtext) drawn on this shot after the grade. Empty (default) is a no-op.",
+          "items": {
+            "$ref": "#/$defs/TextOverlay"
+          },
+          "title": "Overlays",
+          "type": "array"
+        },
+        "retime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional per-shot retiming hint onto the master cadence: 'clean' (frame drop/dup), 'motion' (motion-compensated interpolation), or 'budget' (cheap blend). Only bites when this shot's ``target_fps`` is a NON-integer ratio of the master cadence \u2014 an exact ratio is always the clean drop/dup. Advisory; unset/unknown falls back to the service-wide ``render_motion_blur`` (off by default = clean).",
+          "title": "Retime"
+        },
+        "seconds": {
+          "description": "Requested wall-clock duration. For a silent visual-only shot this IS the length. When ``audio_url`` is set AND ``max_seconds`` is set (a shot the orchestrator's reconcile_timeline bounded) it is a FLOOR: the segment lasts ``max(probed narration, seconds)``, so the narration is never cut and a plan that pins a footage beat to its measured clip (the orchestrator clamps ``seconds`` into reconcile_timeline's ``[min, max]`` window) is honoured instead of being shortened to the narration; the audio after the narration is silence. Without ``max_seconds`` a narrated shot's ``seconds`` may be a storyboard guess and is ignored (narration length). A floor within one output frame of the narration is ignored. A clip that carries its OWN audio (no ``audio_url``) still plays at its natural length. Bounded so one shot can't request a multi-year render.",
+          "exclusiveMinimum": 0,
+          "maximum": 3600.0,
+          "title": "Seconds",
+          "type": "number"
+        },
+        "sfx": {
+          "description": "Accent SFX mixed in at offsets within the shot",
+          "items": {
+            "$ref": "#/$defs/AccentCue"
+          },
+          "title": "Sfx",
+          "type": "array"
+        },
+        "speed": {
+          "default": 1.0,
+          "description": "Per-clip playback speed factor. Retimes BOTH this shot's video (setpts) and its audio (atempo) so the rendered segment lasts 1/speed of its source: 2.0 = twice as fast / half the length, 0.5 = half speed. 1.0 (default) is a no-op \u2014 byte-identical to before this field existed.",
+          "maximum": 4.0,
+          "minimum": 0.25,
+          "title": "Speed",
+          "type": "number"
+        },
+        "split": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SplitScreen"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Composite two sources into the shot canvas via hstack/vstack (ORCH-3.2 T8). None (default) is a no-op \u2014 byte-identical to before this field existed. On a split shot the renderer disables cursor/callout/zoom/speed (their coords are in the primary's full-canvas px)."
+        },
+        "target_fps": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Declared source frame rate of this shot's visual (VC-3). Feeds the master-cadence selector so the whole compile snaps onto one retime-cost-minimal output rate. Advisory \u2014 an omitted value simply doesn't bias the selection; the render still snaps to the master rate.",
+          "title": "Target Fps"
+        },
+        "transition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Transition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Crossfade INTO this shot from the previous one (xfade/acrossfade). Ignored on the first shot. Setting it on ANY shot switches the whole compile from the fast stream-copy concat to a re-encoding xfade join."
+        },
+        "transition_sfx": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SoundCue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "One-shot SFX mixed in at this shot's cut-in (t=0)"
+        },
+        "video_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Pre-recorded clip (keeps its own audio unless audio_url overrides)",
+          "title": "Video Url"
+        }
+      },
+      "required": [
+        "id",
+        "seconds"
+      ],
+      "title": "Shot",
+      "type": "object"
+    },
+    "ShotAudio": {
+      "properties": {
+        "fade_in_s": {
+          "default": 0.0,
+          "description": "Fade-in seconds from shot start",
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Fade In S",
+          "type": "number"
+        },
+        "fade_out_s": {
+          "default": 0.0,
+          "description": "Fade-out seconds to shot end",
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Fade Out S",
+          "type": "number"
+        },
+        "gain_db": {
+          "default": 0.0,
+          "description": "Primary-audio volume adjust in dB",
+          "maximum": 12,
+          "minimum": -60,
+          "title": "Gain Db",
+          "type": "number"
+        },
+        "mute": {
+          "default": false,
+          "description": "Drop the shot's primary audio (silence)",
+          "title": "Mute",
+          "type": "boolean"
+        }
+      },
+      "title": "ShotAudio",
+      "type": "object"
+    },
+    "ShotCaptions": {
+      "description": "The caption cues for one shot, addressed by its index in the shot list.\n\n``shot_index`` is the 0-based position of the shot in ``CompileRequest.shots``.\nAn empty ``cues`` list contributes nothing to the burned-in track.",
+      "properties": {
+        "cues": {
+          "items": {
+            "$ref": "#/$defs/CaptionCue"
+          },
+          "title": "Cues",
+          "type": "array"
+        },
+        "shot_index": {
+          "description": "0-based index into CompileRequest.shots",
+          "minimum": 0,
+          "title": "Shot Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "shot_index"
+      ],
+      "title": "ShotCaptions",
+      "type": "object"
+    },
+    "SoundCue": {
+      "description": "A one-shot SFX played at the start of a shot (transition whoosh/pop).\n\n``url`` is the same reference shape as ``audio_url`` (presigned MinIO\nhttp(s), ``file://``, or a bare local path). ``gain_db`` is a level trim\nfed straight to ffmpeg ``volume=<gain_db>dB`` (0 = unchanged).",
+      "properties": {
+        "gain_db": {
+          "default": 0.0,
+          "description": "Level trim (dB) applied to this cue",
+          "title": "Gain Db",
+          "type": "number"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "title": "SoundCue",
+      "type": "object"
+    },
+    "SplitScreen": {
+      "properties": {
+        "layout": {
+          "description": "hstack (h) side-by-side | vstack (v) stacked.",
+          "enum": [
+            "h",
+            "v"
+          ],
+          "title": "Layout",
+          "type": "string"
+        },
+        "second_source_url": {
+          "description": "Resolved URL of the SECOND video composited beside the primary. The primary source drives the shot duration; both halves are letterboxed into their half-canvas.",
+          "title": "Second Source Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "layout",
+        "second_source_url"
+      ],
+      "title": "SplitScreen",
+      "type": "object"
+    },
+    "TextOverlay": {
+      "description": "A burned-in text title drawn on a shot via ffmpeg ``drawtext``.\n\n``position`` anchors the text at one of nine safe-area points; an explicit\n``x``/``y`` (pixels from the top-left) overrides the anchor. ``start``/``end``\n(shot-local seconds) gate the overlay's visibility via an ``enable=between``\nexpression; both unset shows it for the whole shot.",
+      "properties": {
+        "color": {
+          "default": "white",
+          "description": "ffmpeg fontcolor (name or 0xRRGGBB)",
+          "title": "Color",
+          "type": "string"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hide after this shot-local second (None = to the end)",
+          "title": "End"
+        },
+        "font_size": {
+          "default": 48,
+          "description": "Font size in px",
+          "maximum": 200,
+          "minimum": 8,
+          "title": "Font Size",
+          "type": "integer"
+        },
+        "position": {
+          "default": "bottom-center",
+          "description": "Nine-grid anchor; overridden by explicit x/y",
+          "enum": [
+            "top-left",
+            "top-center",
+            "top-right",
+            "middle-left",
+            "middle-center",
+            "middle-right",
+            "bottom-left",
+            "bottom-center",
+            "bottom-right"
+          ],
+          "title": "Position",
+          "type": "string"
+        },
+        "start": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Show from this shot-local second (None = from the start)",
+          "title": "Start"
+        },
+        "text": {
+          "description": "Overlay text (rendered one line)",
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Explicit x (px from left); overrides position",
+          "title": "X"
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Explicit y (px from top); overrides position",
+          "title": "Y"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "TextOverlay",
+      "type": "object"
+    },
+    "Transition": {
+      "description": "A visual crossfade INTO a shot from the PREVIOUS one.\n\nA shot's ``transition`` describes how the cut ENTERING that shot behaves, so\nthe first shot's ``transition`` is meaningless (no preceding shot to dissolve\nfrom) and is ignored. ``type`` selects an ffmpeg ``xfade`` transition;\n``dissolve`` is an alias for the plain ``fade`` cross-dissolve. ``duration``\nis the overlap length in seconds; at render time it is clamped to the shorter\nof the two adjacent segments so a crossfade can never exceed either clip.\n\nWhen ANY shot in a compile carries a ``transition`` the compiler leaves the\nfast stream-copy concat path and joins segments through a re-encoding\n``xfade``/``acrossfade`` chain instead; a compile with no transitions is\nbyte-identical to before this field existed.",
+      "properties": {
+        "duration": {
+          "default": 0.5,
+          "description": "Crossfade overlap, seconds; clamped to the shorter adjacent clip",
+          "exclusiveMinimum": 0,
+          "maximum": 5.0,
+          "title": "Duration",
+          "type": "number"
+        },
+        "type": {
+          "default": "fade",
+          "description": "xfade transition style ('dissolve' aliases 'fade')",
+          "enum": [
+            "fade",
+            "dissolve",
+            "wipeleft",
+            "slideright"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "Transition",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "ambient": {
+      "description": "Continuous ambient bed segments on the global timeline",
+      "items": {
+        "$ref": "#/$defs/AmbientCue"
+      },
+      "title": "Ambient",
+      "type": "array"
+    },
+    "cadence": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Per-job master-cadence override (VC-3). When set, the whole compile renders at this rate (snapped to the nearest legal cadence {24,25,30,50,60}), bypassing the auto retime-cost selector. Omitted \u2192 auto selection from the shots' declared source rates / render_fps.",
+      "title": "Cadence"
+    },
+    "caption_box_colour": {
+      "anyOf": [
+        {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Burned-in caption box colour as '#RRGGBB' (e.g. '#0B1F3A'). When this or `caption_box_opacity` is set, each cue is drawn on ONE continuous box (libass BorderStyle=4) instead of the default per-line plate; the unset one falls back to black / the default plate opacity. None (default) \u21d2 unchanged. Ignored in 'overlay' mode.",
+      "title": "Caption Box Colour"
+    },
+    "caption_box_opacity": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Opacity of the caption box, 0 (clear) .. 1 (solid). See `caption_box_colour`. None (default) \u21d2 unchanged.",
+      "title": "Caption Box Opacity"
+    },
+    "caption_font_family": {
+      "anyOf": [
+        {
+          "enum": [
+            "DejaVu Sans",
+            "Inter"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Font family for burned-in captions, from the fonts this service embeds: 'Inter' (Inter 4.1, OFL \u2014 SemiBold 600, Bold 700 when the caption mood is bold; matches the film cards) or 'DejaVu Sans' (the default). None (default) \u21d2 the default font, byte-identical. Ignored in 'overlay' mode.",
+      "title": "Caption Font Family"
+    },
+    "caption_mood": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Run-level mood token (e.g. 'energetic', 'calm', 'confident') that selects a per-video caption look (colour/outline/size/weight), so the caption styling tracks the same mood that drives the colour grade. None (default) or an unrecognised value \u21d2 the default `Cap` style, byte-identical to before this field existed.",
+      "title": "Caption Mood"
+    },
+    "caption_text_colour": {
+      "anyOf": [
+        {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Burned-in caption text colour as '#RRGGBB' (e.g. '#F8FAFC'). Overrides the mood's text colour. None (default) \u21d2 unchanged. Ignored in 'overlay' mode.",
+      "title": "Caption Text Colour"
+    },
+    "captions": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ShotCaptions"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Word/phrase-timed burned-in captions (VC-6), one entry per shot carrying cues. Cues are mapped onto the film bus and rendered as a single libass ASS subtitle pass folded into the SAME whole-film grade re-encode. None (default) \u2014 or no emitted cues \u2014 is a no-op, byte-identical to before this field existed.",
+      "title": "Captions"
+    },
+    "captions_karaoke": {
+      "default": false,
+      "description": "When True AND `captions_render` is 'burned_in', render each cue's per-word `words` as ASS {\\k} karaoke highlight; a cue with no words highlights as one phrase. No effect in 'overlay' mode (soft subtitle tracks cannot carry {\\k}) or when `captions` is None. False (default) \u21d2 plain phrase captions, byte-identical.",
+      "title": "Captions Karaoke",
+      "type": "boolean"
+    },
+    "captions_render": {
+      "default": "overlay",
+      "description": "How the word-timed captions in `captions` are rendered. 'overlay' (default) muxes them as a selectable soft mov_text subtitle track (players toggle on/off) \u2014 no burn, no video re-encode. 'burned_in' bakes them into the picture in the whole-film re-encode and must be requested explicitly: subtitles are never burned in by default. Ignored when `captions` is None.",
+      "enum": [
+        "burned_in",
+        "overlay"
+      ],
+      "title": "Captions Render",
+      "type": "string"
+    },
+    "emit_shot_timeline": {
+      "default": false,
+      "description": "When true, the response carries a per-shot `shot_timeline` (authoritative `[start,end)` per beat on the final mux). Off by default so the plain concat fast path stays probe-free.",
+      "title": "Emit Shot Timeline",
+      "type": "boolean"
+    },
+    "finish": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FinishProfile"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Per-job finishing overrides (VC-5): the brand letterbox/pillarbox colour, applied on the per-shot filter chain. None (default) is a no-op \u2014 byte-identical to before this field existed."
+    },
+    "master_lufs": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Per-job override for the loudness-master integrated-loudness target (LUFS). Folded into ``tags['master_lufs']`` and clamped to [-30, -5] via the same path as the tag; out-of-range values are ignored.",
+      "title": "Master Lufs"
+    },
+    "mastering": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MasteringProfile"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Per-job encode/delivery master overrides (colorspace, deband, bitrate mode, CRF, loudness target, platform). Folded into the tag-resolution clamp path; out-of-range values degrade to defaults."
+    },
+    "music": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MusicBed"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Continuous music bed under the whole video, ducked under narration"
+    },
+    "shots": {
+      "items": {
+        "$ref": "#/$defs/Shot"
+      },
+      "maxItems": 2000,
+      "minItems": 1,
+      "title": "Shots",
+      "type": "array"
+    },
+    "tags": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tags"
+    }
+  },
+  "required": [
+    "shots"
+  ],
+  "title": "CompileRequest",
+  "type": "object"
+}

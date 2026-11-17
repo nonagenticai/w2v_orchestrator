@@ -1,0 +1,148 @@
+{
+  "$defs": {
+    "ScreenshotMatch": {
+      "description": "pHash match from a reference image to a frame.",
+      "properties": {
+        "distance": {
+          "title": "Distance",
+          "type": "integer"
+        },
+        "matched_frame": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Matched Frame"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "timestamp": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timestamp"
+        }
+      },
+      "required": [
+        "name",
+        "distance"
+      ],
+      "title": "ScreenshotMatch",
+      "type": "object"
+    },
+    "VerificationFailure": {
+      "description": "A single failed verification criterion.",
+      "properties": {
+        "actual": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual"
+        },
+        "criterion": {
+          "title": "Criterion",
+          "type": "string"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence"
+        },
+        "expected": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected"
+        }
+      },
+      "required": [
+        "criterion"
+      ],
+      "title": "VerificationFailure",
+      "type": "object"
+    }
+  },
+  "description": "Outcome of running a VerificationCriteria against a job.",
+  "properties": {
+    "criteria_passed": {
+      "title": "Criteria Passed",
+      "type": "integer"
+    },
+    "criteria_total": {
+      "title": "Criteria Total",
+      "type": "integer"
+    },
+    "failures": {
+      "items": {
+        "$ref": "#/$defs/VerificationFailure"
+      },
+      "title": "Failures",
+      "type": "array"
+    },
+    "indeterminate": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Indeterminate",
+      "type": "array"
+    },
+    "passed": {
+      "title": "Passed",
+      "type": "boolean"
+    },
+    "screenshot_matches": {
+      "items": {
+        "$ref": "#/$defs/ScreenshotMatch"
+      },
+      "title": "Screenshot Matches",
+      "type": "array"
+    },
+    "transcript_similarity": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Transcript Similarity"
+    }
+  },
+  "required": [
+    "passed",
+    "criteria_total",
+    "criteria_passed"
+  ],
+  "title": "VerificationResult",
+  "type": "object"
+}

@@ -1,0 +1,85 @@
+{
+  "_doc": "Live guard that the resolution tier reaches the final encoded MP4. A slide-only deterministic promo run to `completed` with run.config_overrides.resolution='2k' — the orchestrator threads the tier into the slide render_scale, motion dims, and the terminal compile_tags (render_width/height/crf), and video_compiler ffprobes the produced file and returns its real width/height on the job result, surfaced as promo_render.width/height. The checks `promo_render.width numeric_gte 2560` + `height numeric_gte 1440` pass ONLY if the 2K tier actually landed in the encoded stream — a regression that silently caps the canvas at 1080p (a path ignoring the resolution tags) drops to 1920x1080 and trips both thresholds, which a green `completed` alone would not catch. Slide-only (no LLM script, no site_capture) keeps it cheap for the nightly matrix; the 4K variant is manual-dispatch only.",
+  "project": {
+    "type": "promo",
+    "title": "e2e-promo-resolution-2k",
+    "brief": {
+      "angle": "growth",
+      "audience": "B2B SaaS founders",
+      "target_duration_seconds": 15,
+      "shotlist": [
+        {"kind": "slide", "narration": "Sharp at every resolution.", "slide": {"template": "title", "title": "2K ready"}},
+        {"kind": "slide", "narration": "Crisp text, crisp gradients.", "slide": {"template": "bullets", "title": "Why it matters", "bullets": ["Crisp text", "True 1440p", "No upscaling"]}},
+        {"kind": "slide", "narration": "See the difference today.", "slide": {"template": "cta", "title": "See the difference", "cta_url": "https://example.com/"}}
+      ]
+    },
+    "brand": {"font": "Inter", "name": "Acme", "secondary_color": "#1F6FEB"},
+    "voice": {"descriptor": "confident, crisp, founder-to-founder", "model_preference": "qwen3-coder-30b"},
+    "theme": {"background": "#0B0E14", "accent": "#1F6FEB"},
+    "deliverables": [
+      {"name": "16x9 hero", "format": "16x9", "captions_mode": "none", "target_duration_seconds": 15}
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {
+      "resolution": "2k"
+    }
+  },
+    "_pixel_doc": "Media ACCEPTANCE probes on the delivered master (scripts/e2e_validate.py _MEDIA_CHECKS). Before these, this scenario proved a url was a non-blank string and nothing about the bytes behind it. `artifact_reachable` proves the object downloads and decodes; `audio_present` proves an audio stream exists AND is not digital silence (ffmpeg volumedetect mean/peak dBFS); `resolution` reads the ENCODED width/height, not the number the stage reports about itself; `stream_durations` measures the VIDEO and AUDIO stream durations SEPARATELY and never the container -- a container duration is the MAX over its streams, so it can never refute a truncated video track. Floors are the ones this scenario's existing green assertions already prove, never new tuning numbers.\n\n`duration_within_tolerance` is present but DISARMED (`\"enabled\": false`). It compares the delivered stream length against `ordered_seconds` at the SAME +/-10% the pipeline's own duration_conformance uses. Flip `enabled` to true to arm it -- deliberately not armed while the duration calibration work is in flight, because a red instrument on known-in-flight work teaches people to ignore the instrument.",
+    "expect_pixel_checks": [
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "artifact_reachable",
+        "min_bytes": 4096
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "audio_present",
+        "true_peak_ceiling_dbtp": 0.0
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "resolution",
+        "expect_width": 2560,
+        "expect_height": 1440
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "stream_durations",
+        "require_audio": true,
+        "min_audio_seconds": 7.5,
+        "require_video": true,
+        "min_video_seconds": 7.5
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "duration_within_tolerance",
+        "enabled": false,
+        "ordered_seconds": 15
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "declared_vs_measured",
+        "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+      }
+    ],
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "promo_render",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "artifact_url"},
+        {"type": "numeric_gte", "path": "width", "value": 2560},
+        {"type": "numeric_gte", "path": "height", "value": 1440}
+      ]
+    }
+  ]
+}

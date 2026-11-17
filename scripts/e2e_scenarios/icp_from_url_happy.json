@@ -1,0 +1,34 @@
+{
+  "_doc": "Direct ICP happy path: POST /api/brand/icp-from-url with the license header returns 200 and a grounded ICP record. Exercises the full live chain \u2014 AuthMiddleware -> WebscraperClient -> worker_management 'icp-analysis' worker -> LLM -> anti-fabrication filter. GATED: this passes only once the icp-analysis worker is seeded in live WM (ops step); until then the endpoint returns 502 and this scenario is expected to fail. Asserts stable metadata keys (source_url, pages_fetched \u2014 always set on a 200) rather than volatile facet keys, so a passing extraction never flakes on which facets happened to ground.",
+  "service_probe": {
+    "service": "analysis",
+    "method": "POST",
+    "path": "/api/brand/icp-from-url",
+    "body": {
+      "url": "https://www.anthropic.com",
+      "max_pages": 2
+    },
+    "auth": "license",
+    "expect_status_code": 200,
+    "expect_keys": [
+      "source_url",
+      "pages_fetched"
+    ],
+    "checks": [
+      {
+        "type": "distinct_count_gte",
+        "path": "pages_fetched[]",
+        "value": 1
+      },
+      {
+        "type": "nonempty",
+        "path": "pages_fetched[]"
+      },
+      {
+        "type": "nonempty",
+        "path": "source_url"
+      }
+    ]
+  },
+  "_assertions": "CLOSED 2026-09-06 by the engine change in scripts/e2e_validate.py: run_service_probe now desugars `expect_keys` into STRICT `present` checks (0/0.0/False/[]/{}/\"\" all FAIL) and accepts a `checks` list evaluated by the same _eval_check used by expect_stage_assertions. The discriminating floors below are what make this probe fail on a response that fetched or scored nothing."
+}

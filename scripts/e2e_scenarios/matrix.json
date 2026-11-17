@@ -1,0 +1,362 @@
+[
+  {
+    "label": "action-reel",
+    "scenario": "scripts/e2e_scenarios/action_reel_happy_path.json",
+    "deadline": 3600,
+    "timeout_minutes": 70,
+    "nightly": true
+  },
+  {
+    "_doc": "RAISED 1800 -> 2700 and timeout_minutes 40 -> 55, 2026-09-01, from MEASURED completions, not a round number. The orchestrator `runs` table (RLS-bound to the E2E tenant) holds exactly two `app_review_v1` completions in 45 days: 823s (run 33144609129, 2026-08-28, light contention) and **1936s** (run 33424071257, 2026-08-31, full 37-way fan-out at max-parallel 4). The 1936s one is the false red this entry existed to produce: the harness printed `TIMEOUT ... within 1800s` at 19:50:26Z while the compiler logged `compile.done duration 181.1s` at 19:51:39Z and the run reached `completed` at 19:52:25Z -- 136s AFTER the deadline expired. The work SUCCEEDED and the budget failed it. 2700 = measured max 1936s x ~1.4. The 1.4 is chosen against the ONE thing this run tells us about the tail (the completion landed 7% past the old budget, i.e. the failure was marginal, not an order of magnitude), NOT by doubling: at 2700 a genuine hang still surfaces in 45min of one shared runner instead of 30. Do NOT raise this further without a THIRD measured completion -- with n=2 the 823->1936 spread is contention, and a scenario whose deadline keeps climbing is a performance alarm (see tests/test_e2e_scenario_contracts.py :: test_no_scenario_waits_longer_than_the_run_itself_may_live). || RAISED 2700 -> 3100, timeout_minutes 55 -> 60, 2026-09-04. The 2026-09-01 note below sized 1936 x 1.4 = 2700 off n=2; there are now n=5. Measured 2026-09-04 on the w2v_orchestrator READ-ONLY standby, `runs` where status='completed' over 45d. `app_review_v1`: 823 / 1016 / 1936 / 2309 / MAX 2405s (2026-09-03). 2700 clears that by only 1.12x. 3100 = 2405 x 1.25 (rounded up). Deliberately a SMALL step: app_review's spread is contention, and the measured max has grown far more slowly than course's.",
+    "label": "app-review",
+    "scenario": "scripts/e2e_scenarios/app_review_happy_path.json",
+    "deadline": 3100,
+    "timeout_minutes": 60,
+    "nightly": false
+  },
+  {
+    "label": "audiobook",
+    "scenario": "scripts/e2e_scenarios/audiobook_happy_path.json",
+    "deadline": 1800,
+    "timeout_minutes": 35,
+    "nightly": false
+  },
+  {
+    "_doc": "RAISED 5400 -> 7800 and timeout_minutes 100 -> 140, 2026-09-01, from MEASURED completions. `course_v1` has two completions in 45 days: 4519s (2026-08-28) and **5860s** (run 33424071257, 2026-08-31, full fan-out). The 5860s run is the false red: `TIMEOUT ... within 5400s` fired at 20:21:04Z with the stage table showing `course_compile_lessons completed ... 4935s RESUMES 1` and the run sitting in `course_stitch`; the run reached `completed` at 20:28:35Z, 460s past the budget. So the lessons sub-DAG alone ate 91% of the old budget and left ~8 minutes for stitch + compile. 7800 = measured max 5860s x 1.33, where 1.33 is the OBSERVED spread of this blueprint's own completions (4519 -> 5860 = 1.30x) rounded up -- i.e. one more contention step of headroom, sized from this scenario's variance rather than picked. It is deliberately NOT 4h: course legitimately runs ~5900s, so a real hang must not be allowed to burn half a day of a minRunners=2/maxRunners=8 pool that is SHARED ORG-WIDE. The child `lesson_v1` runs of the 08-31 course took 4935s and 2724s; if the lesson path gets slower again, fix the lesson path -- do not raise this again. || RAISED 7800 -> 9600, timeout_minutes 140 -> 170, 2026-09-04. The 2026-09-01 sizing below used max 5860s; that is now STALE. Measured 2026-09-04 on the w2v_orchestrator READ-ONLY standby, `runs` where status='completed' over 45d. `course_v1` n=4: 4518 / 5599 / 5860 / MAX 7525s (01a06633-d7a9-75db-86db-733f4ff96e41, 2026-09-03). The 7800s budget set three days ago already clears the measured max by only 1.037x, i.e. it was ~275s from producing the exact false red it was raised to prevent. 9600 = 7525 x 1.25 (rounded up), and stays below run_deadline_seconds 14400 as test_no_scenario_waits_longer_than_the_run_itself_may_live requires. \u26a0\ufe0f This blueprint's completed max has now moved 4518 -> 5860 -> 7525 in seven days. That is a PERFORMANCE ALARM on the lesson sub-DAG, not a budgeting problem; the next person should plot the trend and fix the lesson path rather than raise this a third time.",
+    "label": "course",
+    "scenario": "scripts/e2e_scenarios/course_happy_path.json",
+    "deadline": 9600,
+    "timeout_minutes": 170,
+    "nightly": false
+  },
+  {
+    "label": "cro-audit",
+    "scenario": "scripts/e2e_scenarios/cro_audit_happy_path.json",
+    "deadline": 300,
+    "timeout_minutes": 10,
+    "nightly": false
+  },
+  {
+    "_doc": "RAISED 3600 -> 4200 and timeout_minutes 70 -> 80, 2026-09-01, NOT from a percentile but from a MECHANISM: the same commit raises final_critique's video_analyzer poll (_ANALYSIS_POLL_TIMEOUT_S) from 420s to 1100s. That is a deliberate, bounded increase in demo_video wall-clock and it lands exactly where there is least headroom -- measured on the live orchestrator DB over the 24 completed demo_video_v1 runs since the 2026-08-19 pgx model swap, the SIX runs whose gestalt timed out at 420s are the six SLOWEST runs in the set (3009/2898/2640/2521/1989/1799s), because a slow analyzer and a slow run share one cause: contention. Left at 3600 the 2898s run would land at 3578s, i.e. 22s of nominal margin, which is not margin. 4200 = 2588 + 1100 + slack, where 2588s is the measured MAX demo_video run duration EXCLUDING final_critique and 1100 is the new poll budget -- the worst run this system has produced plus a full poll it never gets to spend twice. It is NOT sized from p90 and does not go stale when the weather does. Sibling demo_video full-chain entries (demo-video-relief, demo-video-footage-relief, demo-video-claim-finish) carry the same number for the same reason -- keep them in step. demo-video-gen is deliberately EXCLUDED at 600s: it pauses after demo_video_gen and never reaches final_critique. The coupling between the poll budget and these deadlines is pinned by tests/services/stages/demo_video/test_final_critique_poll_budget.py -- lowering a deadline here, or raising the poll there, fails that test rather than a 70-minute nightly job.",
+    "label": "demo-video-full-chain-todomvc",
+    "scenario": "scripts/e2e_scenarios/demo_video_full_chain_todomvc.json",
+    "deadline": 4200,
+    "timeout_minutes": 80,
+    "nightly": false
+  },
+  {
+    "label": "demo-video-gen",
+    "scenario": "scripts/e2e_scenarios/demo_video_gen_happy_path.json",
+    "deadline": 600,
+    "timeout_minutes": 15,
+    "nightly": false
+  },
+  {
+    "_doc": "RAISED 2400 -> 3600, 2026-08-27 (was below the current demo_video p90). This runs the full demo_video pipeline (gen -> record -> compile) like every other demo_video entry here, so it is subject to the same post-2026-08-18-23:15:42 pgx model swap (MoE gemma-4-26B-A4B-it -> dense Qwen/Qwen3.8-27B-FP8, commit ca04cd7 / PR #898) that tripled demo_video latency to median 1785s / p90 3121s. 2400s sat below that p90. Matches the sibling demo_video entries (demo-video-claim-finish, demo-video-full-chain-todomvc) resized against the same measurement; keep in step with them, not re-derived independently. Found via a sibling sweep of .github/workflows/gestalt-calibration-corpus.yaml's own --deadline 1500 fix (same root cause), not from an observed failure of this entry specifically. || RAISED 3600 -> 4200 and timeout_minutes 70 -> 80, 2026-09-01, to cover the final_critique analyzer-poll raise 420 -> 1100. Full rationale and the measured arithmetic live on demo-video-full-chain-todomvc above; keep this in step with it rather than re-deriving.",
+    "label": "demo-video-relief",
+    "scenario": "scripts/e2e_scenarios/demo_video_relief.json",
+    "deadline": 4200,
+    "timeout_minutes": 80,
+    "nightly": false
+  },
+  {
+    "_doc": "RAISED 2400 -> 3600, 2026-08-27 (was below the current demo_video p90). Same rationale as demo-video-relief immediately above: full demo_video pipeline, same post-swap p90 3121s measurement (commit ca04cd7 / PR #898), 2400s sat below it. Matches the sibling demo_video entries; keep in step with them. || RAISED 3600 -> 4200 and timeout_minutes 70 -> 80, 2026-09-01, to cover the final_critique analyzer-poll raise 420 -> 1100. Full rationale and the measured arithmetic live on demo-video-full-chain-todomvc above; keep this in step with it rather than re-deriving.",
+    "label": "demo-video-footage-relief",
+    "scenario": "scripts/e2e_scenarios/demo_video_footage_relief.json",
+    "deadline": 4200,
+    "timeout_minutes": 80,
+    "nightly": false
+  },
+  {
+    "_doc": "RAISED 3600 -> 4200 and timeout_minutes 70 -> 80, 2026-09-01, to cover the final_critique analyzer-poll raise 420 -> 1100. Full rationale and the measured arithmetic live on demo-video-full-chain-todomvc above; keep this in step with it rather than re-deriving.",
+    "label": "demo-video-claim-finish",
+    "scenario": "scripts/e2e_scenarios/demo_video_claim_finish.json",
+    "deadline": 4200,
+    "timeout_minutes": 80,
+    "nightly": true
+  },
+  {
+    "label": "dual-run-frame-md5",
+    "scenario": "scripts/e2e_scenarios/dual_run_frame_md5.json",
+    "deadline": 3000,
+    "timeout_minutes": 60,
+    "nightly": false
+  },
+  {
+    "label": "generic-full-chain",
+    "scenario": "scripts/e2e_scenarios/generic_full_chain.json",
+    "deadline": 3600,
+    "timeout_minutes": 70,
+    "nightly": false,
+    "_doc": "generic_v1 driven to a COMPLETED deliverable. Every other generic scenario pauses on purpose (happy_path is the pause/cancel probe and asserts 'paused'; multi_source pauses at source_ingest; panel_image and storyboard_merge use a throwaway generic project to reach an API), so until this entry existed the generic blueprint had never produced a deliverable in E2E at all. deadline/timeout copied from 'promo', the closest completing sibling by shape (LLM script -> storyboard -> TTS -> one compiled master); they are NOT measured, because this has never completed once. nightly:false deliberately: it belongs in the rotation pool, not the curated core that must stay green, until it has passed even once. UNEXERCISED as of 2026-09-11 - a green here proves nothing until it has actually been launched."
+  },
+  {
+    "label": "growth-bundle",
+    "scenario": "scripts/e2e_scenarios/growth_bundle_happy.json",
+    "deadline": 300,
+    "timeout_minutes": 12,
+    "nightly": false
+  },
+  {
+    "label": "happy-path",
+    "scenario": "scripts/e2e_scenarios/happy_path.json",
+    "deadline": 60,
+    "timeout_minutes": 5,
+    "nightly": true
+  },
+  {
+    "label": "icp-contract",
+    "scenario": "scripts/e2e_scenarios/icp_from_url_happy.json",
+    "deadline": 180,
+    "timeout_minutes": 10,
+    "nightly": false
+  },
+  {
+    "label": "icp-no-token",
+    "scenario": "scripts/e2e_scenarios/icp_from_url_no_token.json",
+    "deadline": 60,
+    "timeout_minutes": 5,
+    "nightly": false
+  },
+  {
+    "label": "lesson-motion-slides",
+    "scenario": "scripts/e2e_scenarios/lesson_motion_slides_happy_path.json",
+    "deadline": 1500,
+    "timeout_minutes": 35,
+    "nightly": false
+  },
+  {
+    "label": "lesson-two-voice",
+    "scenario": "scripts/e2e_scenarios/lesson_two_voice_happy_path.json",
+    "deadline": 2400,
+    "timeout_minutes": 50,
+    "nightly": false
+  },
+  {
+    "label": "motion-graphics-gen",
+    "scenario": "scripts/e2e_scenarios/motion_graphics_gen_happy_path.json",
+    "deadline": 900,
+    "timeout_minutes": 20,
+    "nightly": false
+  },
+  {
+    "label": "multi-source",
+    "scenario": "scripts/e2e_scenarios/multi_source_happy_path.json",
+    "deadline": 600,
+    "timeout_minutes": 15,
+    "nightly": false
+  },
+  {
+    "_doc": "Deadline sized for a CLUSTER-WIDE SERIALISED job, not for one render. Panel-image submissions take a TTL'd Redis lock (src/services/storyboard/panel_submit_lock.py) whose max wait is 1800s, so this scenario can legitimately sit `queued` for the whole of that window behind another board's generate \u2014 including one started by a concurrent scenario in this same matrix (max-parallel: 4). 1800s of lock wait + the FLUX render itself + slack = 2700s, and timeout_minutes is 50 so the GH job outlives the validator's own deadline and the FAILED line reaches the log instead of being cut off mid-poll. nightly:false \u2014 it spends real GPU time on the single image runner and would head-of-line block the nightly's other scenarios; dispatch it explicitly.",
+    "label": "panel-image",
+    "scenario": "scripts/e2e_scenarios/panel_image_happy_path.json",
+    "deadline": 2700,
+    "timeout_minutes": 50,
+    "nightly": false
+  },
+  {
+    "label": "promo",
+    "scenario": "scripts/e2e_scenarios/promo_happy_path.json",
+    "deadline": 3600,
+    "timeout_minutes": 70,
+    "nightly": true
+  },
+  {
+    "_doc": "RAISED 1800 -> 3600, 2026-08-27 (was below the current promo p90). Runs a full deterministic promo render to `completed` (only `resolution` is overridden), so it is subject to the post-2026-08-18-23:15:42 pgx model swap (MoE gemma-4-26B-A4B-it -> dense Qwen/Qwen3.8-27B-FP8, commit ca04cd7 / PR #898) measured at promo median 1569s / p90 2530s. 1800s sat below that p90. Raised to 3600 to match the sibling `promo` entry ca04cd7 itself resized against the same measurement, rather than picking a new number 2530s barely covers. Found via a sibling sweep of gestalt-calibration-corpus.yaml's own --deadline 1500 fix (same root cause), not from an observed failure of this entry specifically.",
+    "label": "promo-resolution-2k",
+    "scenario": "scripts/e2e_scenarios/promo_resolution_2k_happy_path.json",
+    "deadline": 3600,
+    "timeout_minutes": 70,
+    "nightly": false
+  },
+  {
+    "label": "promo-shotlist",
+    "scenario": "scripts/e2e_scenarios/promo_shotlist_happy_path.json",
+    "deadline": 600,
+    "timeout_minutes": 15,
+    "nightly": false
+  },
+  {
+    "label": "promo-shotlist-url",
+    "scenario": "scripts/e2e_scenarios/promo_shotlist_url_happy_path.json",
+    "deadline": 1800,
+    "timeout_minutes": 40,
+    "nightly": false
+  },
+  {
+    "_doc": "RAISED 1800 -> 3600, 2026-08-27 (was below the current promo p90). Same rationale as promo-resolution-2k: full deterministic-shotlist promo render to `completed` (only `title_card` is overridden), subject to the same post-swap promo p90 2530s measurement (commit ca04cd7 / PR #898). 1800s sat below it. Matches the sibling `promo` entry; keep in step with it.",
+    "label": "promo-title-card",
+    "scenario": "scripts/e2e_scenarios/promo_title_card_happy_path.json",
+    "deadline": 3600,
+    "timeout_minutes": 70,
+    "nightly": false
+  },
+  {
+    "label": "score-artifact-contract",
+    "scenario": "scripts/e2e_scenarios/score_artifact_happy.json",
+    "deadline": 120,
+    "timeout_minutes": 8,
+    "nightly": false
+  },
+  {
+    "label": "score-artifact-no-token",
+    "scenario": "scripts/e2e_scenarios/score_artifact_no_token.json",
+    "deadline": 60,
+    "timeout_minutes": 5,
+    "nightly": false
+  },
+  {
+    "label": "score-delta-contract",
+    "scenario": "scripts/e2e_scenarios/score_delta_happy.json",
+    "deadline": 180,
+    "timeout_minutes": 8,
+    "nightly": false
+  },
+  {
+    "label": "seo-audit",
+    "scenario": "scripts/e2e_scenarios/seo_audit_happy_path.json",
+    "deadline": 300,
+    "timeout_minutes": 12,
+    "nightly": false
+  },
+  {
+    "label": "storyboard-merge",
+    "scenario": "scripts/e2e_scenarios/storyboard_merge.json",
+    "deadline": 180,
+    "timeout_minutes": 8,
+    "nightly": true
+  },
+  {
+    "label": "tenant-isolation",
+    "scenario": "scripts/e2e_scenarios/tenant_isolation.json",
+    "deadline": 60,
+    "timeout_minutes": 5,
+    "nightly": true
+  },
+  {
+    "_doc": "RAISED 3600 -> 5700, timeout_minutes 70 -> 105, 2026-09-04, from a PROVEN false red. Measured 2026-09-04 on the w2v_orchestrator READ-ONLY standby, `runs` where status='completed' over 45d. `web_design_v2` n=6: min 99 / p50 125 / p95 3426 / MAX 4505s. The 4505s run (01a06870-44b5-74f6-8a21-8b68c90f1e01, 2026-09-03, full-matrix run 33783687265) reached terminal status `completed` and was failed anyway by the 3600s deadline -- its `design` stage alone ran 3606s, so it lost by SIX SECONDS. It is not a different scenario shape: the 4505s run and the 190s run execute the IDENTICAL stage set (brand_extract, design, assemble, verify), so the 24x spread is LLM/contention variance on one scenario, not two populations. 5700 = measured max 4505 x 1.25 (the standing headroom rule, pinned by tests/test_e2e_scenario_contracts.py :: test_every_scenario_deadline_clears_its_measured_runtime). Still far below pipeline.run_deadline_seconds (14400).",
+    "label": "web-design-v2",
+    "scenario": "scripts/e2e_scenarios/web_design_v2_happy_path.json",
+    "deadline": 5700,
+    "timeout_minutes": 105,
+    "nightly": false
+  },
+  {
+    "label": "website-review",
+    "scenario": "scripts/e2e_scenarios/website_review_happy_path.json",
+    "deadline": 9000,
+    "timeout_minutes": 160,
+    "nightly": false
+  },
+  {
+    "_doc": "website_review ordered at 50s -- the incident order (50s ordered, ~15s delivered). Same work shape as `website-review` (same target, no variants; only the ordered duration differs), so it carries that entry's deadline/timeout unchanged rather than a number of its own. Dispatch-only.",
+    "label": "website-review-50s",
+    "scenario": "scripts/e2e_scenarios/website_review_50s.json",
+    "deadline": 9000,
+    "timeout_minutes": 160,
+    "nightly": false,
+    "rotation": false,
+    "rotation_reason": "Paid proof of the 50s-order incident, launched by hand against a specific fix. It duplicates `website-review`'s work shape at full render cost, so a scheduled run buys no coverage the core does not already have."
+  },
+  {
+    "label": "marketing-scorecard",
+    "scenario": "scripts/e2e_scenarios/marketing_scorecard_happy_path.json",
+    "deadline": 300,
+    "timeout_minutes": 10,
+    "nightly": false
+  },
+  {
+    "_doc": "RAISED 3300 -> 4000, timeout_minutes 60 -> 75, 2026-09-04. Measured 2026-09-04 on the w2v_orchestrator READ-ONLY standby, `runs` where status='completed' over 45d. `web_design_v1` n=6: min 289 / p50 337 / p95 2466 / MAX 3135s. The old 3300s budget cleared the measured max by 1.05x, which is not headroom -- this is the same bimodal single-stage `web_design` scenario as web-design-v2 above (5 runs at 289-461s, one at 3135s, same stage set), so the next slow draw false-reds. Sized 3135 x 1.25 = 3919 -> 4000. NOT raised beyond that: a genuine web_design hang must still surface inside ~1h of a shared runner.",
+    "label": "web-design-v1",
+    "scenario": "scripts/e2e_scenarios/web_design_happy_path.json",
+    "deadline": 4000,
+    "timeout_minutes": 75,
+    "nightly": false
+  },
+  {
+    "label": "showcase",
+    "scenario": "scripts/e2e_scenarios/showcase_happy_path.json",
+    "deadline": 5400,
+    "timeout_minutes": 100,
+    "nightly": false
+  },
+  {
+    "_doc": "ADDED 2026-10-05. Bed-tail proof: showcase_happy_path + authored jazz_lounge bed + a 6s VO-free outro title card, so the music bed's tail is measurable (run 01a10d5d's VO ran to 29.23s of 29.25s). Same blueprint/brief as `showcase`, plus one ~6s card render, so it inherits that entry's deadline. nightly:false -- a paid proof, dispatch/hand-launch only.",
+    "label": "showcase-bed-tail-jazz",
+    "scenario": "scripts/e2e_scenarios/showcase_bed_tail_jazz.json",
+    "deadline": 5400,
+    "timeout_minutes": 100,
+    "nightly": false,
+    "rotation": false,
+    "rotation_reason": "Paid bed-tail proof (authored jazz_lounge bed + a 6s outro card), launched by hand to measure one fix. Not an unattended regression scenario."
+  },
+  {
+    "_doc": "ADDED 2026-10-07. Never-burned-by-default proof on the SILENT path: a demo_video with brief.captions_only=true and NO captions_mode, gated by expect_subtitles (burned false, mov_text soft track, captions.srt >= 1 cue). Same full demo_video chain as demo-video-relief minus TTS, so it inherits that entry's deadline. nightly:false -- a paid proof, dispatch/hand-launch only.",
+    "label": "demo-video-captions-only",
+    "scenario": "scripts/e2e_scenarios/demo_video_captions_only.json",
+    "deadline": 4200,
+    "timeout_minutes": 80,
+    "nightly": false,
+    "rotation": false,
+    "rotation_reason": "Paid proof of the never-burned-by-default captions rule, launched by hand against a specific fix. Not an unattended regression scenario."
+  },
+  {
+    "_doc": "ADDED 2026-10-05. Relief-decision proof: showcase_happy_path + direction.timing (target 12s, relief auto) so reconcile_timeline emits a timeline_manifest classified cant_converge and the post-completion structural-relief hook DECIDES (and, kill-switch on, spawns a paid child the harness does not follow). Same blueprint/brief as `showcase` plus the WM relief loop, so it inherits that entry's deadline. nightly:false -- spawns a paid child, never a nightly.",
+    "label": "showcase-relief-overrun",
+    "scenario": "scripts/e2e_scenarios/showcase_relief_overrun.json",
+    "deadline": 5400,
+    "timeout_minutes": 100,
+    "nightly": false,
+    "rotation": false,
+    "rotation_reason": "PAID hand-launched proof of the structural-relief DECISION path. Measured 2026-10-05/06 (run 01a10e26): at this 12s target relief DECLINES (`STOP_UNDERFULL`, `spawned_child_run_id: null`) -- it does NOT spawn a child. Kept out of rotation because it is a full paid render whose relief verdict the harness does not read, so an unattended scheduled run would bill a film nobody inspects."
+  },
+  {
+    "_doc": "RAISED 7000 -> 9000, 2026-08-27 (was below the current website_review p90, AND this scenario does MORE work than the plain website_review it's measured against). Runs website_review to `completed` with `redesign_styles` fanned out over 2 variants against a TALL real page -- heavier than the single-variant `website_review_happy_path` used for the post-2026-08-18-23:15:42 pgx model-swap measurement (commit ca04cd7 / PR #898: website_review median 4281s / p90 7814s / max 7814s). 7000s sat below that p90 even before accounting for the extra variant fan-out. Raised to match the sibling `website-review` entry (9000s, also resized by ca04cd7) as a FLOOR, not a measured number for this heavier scenario specifically -- re-measure this entry's own completed durations before trusting 9000s has real headroom. || 2026-09-01 RE-CHECKED, DELIBERATELY UNCHANGED at 9000. The suspicion that this entry is under-budgeted does not survive the data: `website_review_v1` has ZERO completions attributable to this variants scenario in 45 days, so there is no measured runtime to size against, and BOTH recent reds have a non-timeout cause. Run 33144609129 (2026-08-28) hit `TIMEOUT ... within 9000s`, but that run did not hang -- it terminal-`failed` at 15527s because an html_render_service redeploy at 10:05:17Z killed its in-flight job (the deploy-skew snapshot steps in e2e-post-promote.yaml exist for exactly this). Run 33424071257 (2026-08-31) failed FAST at 1322s on an upstream 503, nowhere near the budget. Raising a deadline to cure an env-kill and a 503 would ship a number backed by nothing and hide the next real hang for 2.5h. Leave 9000 until ONE run of THIS scenario reaches `completed`, then size from that.",
+    "_doc_2026_09_02": "RAISED 9000 -> 12000; timeout_minutes 160 -> 220. The 2026-09-01 'leave 9000 until ONE run of THIS scenario reaches completed' condition above is DISCHARGED BY MEASUREMENT, not by another estimate. Full-matrix run 33590213252 terminal-failed this scenario with `StageTimeoutError: stage 'website_redesign.wait': all 8 attempts timed out` -- but html_render_service.redesign_jobs shows the abandoned job 01a060f2-eb9d-724d-a49b-f76294cf447d COMPLETED SUCCESSFULLY at 10:52:09, ~25 min AFTER the orchestrator gave up: 5180s of execution against a 4720s single-attempt wait ceiling. Four other 2-variant jobs the same day executed 5580 / 5885 / 7102 / 7370s, all clean with an empty error_message. So this scenario was never over-budget for a mystery reason -- the orchestrator was quitting on healthy work and then paying for a SECOND render. The structural fix (stages/shared/design_job_stash.py) makes a resumed attempt RE-ATTACH to the same job, so the resume ladder now COMPOSES coverage instead of restarting it. ARITHMETIC: the redesign stage is bounded per attempt at 7200s (blueprints/website_review.py) and its total coverage is bounded by html_render's REDESIGN_MAX_JOB_LIFETIME_SECONDS (9000s after gitops #3319 -- which merges FIRST), because the service ages the job out at 9000s and the re-attached poll then fails loudly with the service's own error. So the worst case this scenario must fit is 9000s of redesign + the critique / script / record / compile stages around it; 12000 gives those ~3000s, and stays below pipeline.run_deadline_seconds (14400) as test_no_scenario_waits_longer_than_the_run_itself_may_live requires. timeout_minutes 220 (13200s) keeps timeout_minutes*60 above deadline + 180 (run-e2e-job.sh's poll window) as test_the_e2e_timeout_ladder_stays_ordered requires. NOT a per-scenario deadline chosen to cure a red: it is derived from the service-side job lifetime, which is the only ceiling that now decides the outcome.",
+    "label": "website-review-variants",
+    "scenario": "scripts/e2e_scenarios/website_review_variants_happy_path.json",
+    "deadline": 12000,
+    "timeout_minutes": 220,
+    "nightly": false
+  },
+  {
+    "_doc": "ADDED 2026-11-01. Live proof of the Studio service bench's flagship slot: POST /api/services/image generates a real image and returns the persisted run (assertions in the scenario file). Dispatch-only (`nightly: false`): it is proof for a shipped feature, not a per-night regression, and every run costs a shared ARC runner plus a GPU slot on mini1 — the render itself is local MLX, so nothing is billed. deadline 300 = the probe's own 240s HTTP budget (raised above the route's 180s server-side ceiling for image) with headroom for the Job's startup; timeout_minutes 12 keeps timeout_minutes*60 above deadline+180 as test_the_e2e_timeout_ladder_stays_ordered requires.",
+    "label": "service-lab-image",
+    "scenario": "scripts/e2e_scenarios/service_lab_image_generate.json",
+    "deadline": 300,
+    "timeout_minutes": 12,
+    "nightly": false,
+    "rotation": false,
+    "rotation_reason": "Proof of a shipped feature, not a per-night regression: every dispatch spends a shared ARC runner plus a GPU slot on mini1, so a scheduled run buys no coverage the core does not already have. Reachable by its label. Added 2026-11-02 so an empty-label full-matrix dispatch does not quietly spend GPU on the whole service-lab set."
+  },
+  {
+    "_doc": "ADDED 2026-11-02. Live proof of the Studio service bench's VIDEO slot (POST /api/services/video) — the one slot with no evidence at all before this. Drives ACG list/submit/poll and the media store; `seconds: 1` holds the render at its floor. deadline 420 = the probe's own 360s HTTP budget (above the route's 300s server-side ceiling, routes/service_lab.py::_TIMEOUT_SECONDS['video']) with Job-startup headroom; timeout_minutes 11 keeps timeout_minutes*60 above deadline+180 as test_the_e2e_timeout_ladder_stays_ordered requires. NOTE: a 409 provider_unavailable here means the deployment has NO registered video provider — a config finding, not a bench defect; see the scenario's _expect_doc.",
+    "label": "service-lab-video",
+    "scenario": "scripts/e2e_scenarios/service_lab_video_generate.json",
+    "deadline": 420,
+    "timeout_minutes": 11,
+    "nightly": false,
+    "rotation": false,
+    "rotation_reason": "Proof of a shipped feature and the most expensive bench call of the set (a real video job); a scheduled run buys no coverage the core does not already have. Reachable by its label."
+  },
+  {
+    "_doc": "ADDED 2026-11-02. Live proof of the Studio service bench's OCR slot (POST /api/services/ocr, multipart) — the route family the probe harness could not even send before it learned `multipart`. Local MLX OCR, no paid API. deadline 240 = the probe's 180s HTTP budget (above the route's 120s ceiling) with Job-startup headroom; timeout_minutes 8 keeps timeout_minutes*60 above deadline+180.",
+    "label": "service-lab-ocr",
+    "scenario": "scripts/e2e_scenarios/service_lab_ocr_extract.json",
+    "deadline": 240,
+    "timeout_minutes": 8,
+    "nightly": false,
+    "rotation": false,
+    "rotation_reason": "Proof of a shipped feature (a synthetic fixture page), not a per-night regression; reachable by its label."
+  },
+  {
+    "_doc": "ADDED 2026-11-02. Pins the TRUTHFUL state of the Studio service bench's vision slot: with no vision model on this deployment (pgx vLLM serves a text-only model) POST /api/services/vlm must answer 409 provider_unavailable, not the 502 'the provider failed' it returned when the image part was rejected upstream. No GPU is spent — the guard refuses before any provider call — and the probe is fast, so deadline 240 / timeout_minutes 8 are pure job-startup headroom. When a vision model is wired (PROVIDER_PLATFORM_VLM_ENABLED=true on a deployment that serves one), re-point this row AT THE SAME LABEL to a 200 scenario instead of adding a second label.",
+    "label": "service-lab-vlm",
+    "scenario": "scripts/e2e_scenarios/service_lab_vlm_unavailable.json",
+    "deadline": 240,
+    "timeout_minutes": 8,
+    "nightly": false,
+    "rotation": false,
+    "rotation_reason": "A state assertion about a deployment capability, not a regression check: it is expected to be re-pointed when the capability is restored. Reachable by its label."
+  }
+]

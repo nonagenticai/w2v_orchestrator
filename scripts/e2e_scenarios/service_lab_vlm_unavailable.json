@@ -1,0 +1,29 @@
+{
+  "_doc": "Studio service bench, vision slot: POST /api/services/vlm must answer 409 `provider_unavailable` — NOT 502 — while this deployment has no vision model. Measured 2026-11-02: the slot rode the platform LLM, pgx's vLLM served a text-only model (Nanbeige4.3-33B-FP8), the image part was a 400 upstream and the page told the user `The provider failed`. The provider had not failed; the deployment has no vision model. `_vlm` now refuses the PLATFORM path with SlotUnavailableError until `PROVIDER_PLATFORM_VLM_ENABLED=true` is set on a deployment that actually serves one. A TENANT vlm connection bypasses this guard and would answer 200 — this scenario pins the platform state and must be re-pointed when the capability is restored.",
+  "service_probe": {
+    "service": "orchestrator",
+    "method": "POST",
+    "path": "/api/services/vlm",
+    "auth": "license",
+    "timeout_seconds": 180,
+    "multipart": {
+      "fields": { "prompt": "What does this image say?" },
+      "files": [
+        {
+          "field": "file",
+          "filename": "vlm-probe.png",
+          "content_type": "image/png",
+          "content_b64": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
+        }
+      ]
+    },
+    "expect_status_code": 409,
+    "expect_keys": ["detail.code", "detail.message"],
+    "checks": [
+      { "type": "equals", "path": "detail.code", "value": "provider_unavailable" }
+    ]
+  },
+  "_expect_doc": "A refusal body is the app envelope {\"detail\": {\"code\", \"message\"}} (routes/service_lab.py::_Refusal.response), so the assertions read detail.*, not the run fields.",
+  "_fixture_doc": "An 8x8 solid grey PNG (68 base64 bytes): enough for the multipart parse and the image-type sniff, and deliberately not a real photo — this scenario asserts the REFUSAL, so the model never sees it. When a vision model is wired, replace this scenario's expectation with a 200 and give it a real image.",
+  "_cost_doc": "No GPU: the guard refuses before any provider call. Still `nightly: false` — the orchestrator's schedule is removed, and this is a state assertion, not a nightly regression."
+}

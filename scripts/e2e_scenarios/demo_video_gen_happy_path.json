@@ -1,0 +1,41 @@
+{
+  "_doc": "Per-promote guard for the demo_video blueprint's generation seam. A demo_video run against a live URL makes demo_video_gen drive bdd_playwright_service (webscraper crawl + LLM feature/narration generation) and normalize the per-scenario NarrationParts into `lines` keyed by the clip-<n> join id. demo_video_gen is the gate stage, so pause_after_stages:[demo_video_gen] stops BEFORE the heavy tail (demo_video_narrate TTS + demo_video_record's FTR npm-install/Playwright recording + demo_video_compile) — the same cheap-guard pattern promo-shotlist-url uses with site_capture. Stage assertions prove bdd produced at least one narration line (>=1 distinct clip id) with real text and a bdd_job_id the record stage can hand to the frontend_test_runner — a green `paused` alone would not catch a regression where the bdd integration silently returned no scenarios. The FULL record→compile→MP4 path is validated by the manual live run (too heavy/flaky for every promote, like website_review's full render). Uses https://example.com (IANA-reserved demo domain, stable fast TLS, same as app_review/website_review).",
+  "project": {
+    "type": "demo_video",
+    "title": "e2e-demo-video-gen",
+    "brief": {
+      "target_url": "https://example.com",
+      "max_scenarios_per_feature": 2
+    },
+    "voice": {
+      "descriptor": "clear, instructional, calm",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "deliverables": [
+      {
+        "name": "Demo video 16x9",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 60
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": ["demo_video_gen"],
+    "config_overrides": {}
+  },
+  "expect_terminal_status": ["paused"],
+  "expect_stage_assertions": [
+    {
+      "_checks_doc": "STRENGTHENED 2026-09-05 with `features_generated >= 1` (DemoVideoGenOutput, stages/demo_video/gen.py:365; set from result.features_generated at gen.py:502 on the bdd path, and 0 ONLY on the authored path at gen.py:440 — this scenario is bdd: it POSTs a target_url and no brief.lines). That is the field proving bdd actually GENERATED a suite rather than the stage returning a correctly-shaped empty envelope. The lines[].id floor is deliberately LEFT AT 1 while its sibling specs go to 2: this scenario targets https://example.com — a single static page — with an explicit max_scenarios_per_feature of 2 and NO focus_areas, and no run of it has ever been measured yielding 2 beats. The measurement that justifies a floor of 2 elsewhere (gen.py::_scenarios_for_target's own note: five scenarios on run 01a03011) is a TodoMVC number and does not transfer to example.com. Raising this floor without a measurement risks a permanent red on a healthy run, which is worse than the weak floor it would replace.",
+      "stage": "demo_video_gen",
+      "status": "completed",
+      "checks": [
+        {"type": "distinct_count_gte", "path": "lines[].id", "value": 1},
+        {"type": "numeric_gte", "path": "features_generated", "value": 1},
+        {"type": "nonempty", "path": "lines[].text"},
+        {"type": "nonempty", "path": "bdd_job_id"}
+      ]
+    }
+  ]
+}

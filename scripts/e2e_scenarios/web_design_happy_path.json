@@ -1,0 +1,30 @@
+{
+  "_doc": "web_design v1 (greenfield): a ONE-stage blueprint whose single stage is also its terminal_artifact_stage. brief.target_url is DELIBERATELY OMITTED — its presence flips scope from 'landing' to 'full_page' refine mode, which tests the redesign path instead of the greenfield one that web_design v1 exists for. brief.description is required (design.py:165-167 raises StageError without it). Asserting redesign_job_id + redesigned_html_path rather than status alone: those two prove a design job ran AND that HTML actually landed.",
+  "project": {
+    "type": "web_design",
+    "title": "e2e-web-design-v1",
+    "brief": {
+      "description": "A landing page for a small accounting practice that files self-assessment tax returns for freelancers.",
+      "style": "modern",
+      "page_type": "landing",
+      "audience": "UK freelancers filing their own tax returns"
+    },
+    "deliverables": [{"name": "Landing page", "format": "16x9", "captions_mode": "none"}]
+  },
+  "run": {"pause_after_stages": [], "config_overrides": {}},
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "web_design",
+      "status": "completed",
+      "_checks_doc": "ADDED 2026-09-05: the visuals pair. Every pre-existing check here is `nonempty` on a SCALAR that the stage sets from its own inputs — `style` falls back to the brief's own `style` (design.py:213 `style=result.style or style`) and `redesign_job_id` is the submit id, so neither says the page RENDERED. The one field that does is `visuals[]`: design.py:189 collects it via WebsiteRedesignStage._collect_visuals(result), fed by the `generate_screenshots=True, screenshot_viewports=[\"desktop\"]` submit at design.py:124-126 — i.e. a real Chromium screenshot OF the generated HTML. RedesignVisual.image_url is a required str (website_review/redesign.py:88), and website_review_variants_happy_path already asserts this exact path live (`visuals[].image_url`, distinct >= 2 there because it also captures the original + comparison; greenfield sets capture_original=False / generate_comparison=False at design.py:129-131, so the floor here is 1). RESIDUAL RISK, stated: design.py:190 raises only when html AND visuals are both missing, so a job that returns HTML but no screenshot would now go red where it used to pass. That is the intended trade — a design with no rendered evidence is not a design — but if it ever fires, check html_render's screenshot lane before weakening this back.",
+      "checks": [
+        {"type": "nonempty", "path": "redesign_job_id"},
+        {"type": "nonempty", "path": "redesigned_html_path"},
+        {"type": "nonempty", "path": "style"},
+        {"type": "nonempty", "path": "visuals[].image_url"},
+        {"type": "distinct_count_gte", "path": "visuals[].image_url", "value": 1}
+      ]
+    }
+  ]
+}

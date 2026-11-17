@@ -1,0 +1,131 @@
+{
+  "_doc": "CALIBRATION render for the gestalt corpus. Full-chain demo_video (gen -> record \u2225 narrate -> compile -> MP4) with run.config_overrides.ship_gate set to a NON-empty mapping {mode: critique_only}. A non-empty ship_gate mapping ACTIVATES the final_critique stage, which computes gestalt_summary, persists it to stage_outputs (the DURABLE corpus) and emits the w2v_orchestrator_gestalt_* Prometheus histograms \u2014 the whole point of this scenario is to make the live orchestrator accumulate REAL gestalt samples for calibration. `critique_only` means the gate scores/summarises the artifact but ACCEPTS it verbatim (no re-render, no ceilings enforcement), so the run stays cheap and always completes. There is deliberately NO `ceilings` key: without ceilings the gate is inert/advisory (momentum_ok defaults True; ship_ready is soft), so a False ship_ready is legitimate calibration data, not a failure. This scenario is FULLY INERT to prod: prod runs set no ship_gate at all, so nothing here changes production behavior. Driven in a loop by .github/workflows/gestalt-calibration-corpus.yaml.\n\nTARGET (changed 2026-07-20): TodoMVC, the same real interactive SPA the sibling demo_video_full_chain_todomvc.json scenario uses \u2014 NOT example.com. MEASURED: the example.com renders produced duplicate_frame_ratio 0.975 and a shot_timeline of length 1-2, i.e. a near-static two-shot film. continuity_stats is the ADJACENT-SHOT L2 delta distribution, so a 1-2 shot film yields n=0 adjacent pairs and cohesion collapses to the degenerate 1.0 \u2014 the two samples the corpus had accumulated by 2026-07-19 were exactly that (continuity n=0, cohesion 1.0, momentum_gap 0.0) and carried ZERO calibration information. example.com is also a degenerate BDD target (near-empty DOM \u21d2 the generated suite hangs on missing elements \u21d2 frontend_test_runner 600s timeout). SHOT-COUNT ASSERTION (corrected 2026-08-03, was >= 5): the previous `>= 5` rested on the premise 'three focus_areas x max_scenarios_per_feature 3 is sized to yield >= 5 shots'. Both halves of that premise were FALSE. (a) `focus_areas` was accepted by bdd_playwright_service (api/schemas/demo_video.py) and written into the job config, but READ NOWHERE \u2014 generate_demo_features built its prompt from the page summary + max_scenarios only, so the three focus areas produced ZERO extra scenarios. (b) `max_scenarios_per_feature` was interpolated into the LLM prompt as prose and enforced nowhere \u2014 it is a hint to the model, so it neither caps nor floors the count. Net: the scenario had no lever that raised shot count, and `>= 5` was structurally unreachable; the gate failed on 2026-08-02 with 3 and 4 distinct ids. Both bugs are fixed upstream (focus_areas now steers the prompt; the cap is now trimmed post-parse), but the cap remains a MAXIMUM \u2014 nothing guarantees any particular minimum, since the count is ultimately the model's choice. So the assertion now asserts what the system can honestly guarantee. `>= 3` shots yields n=2 adjacent pairs: comfortably non-degenerate, with margin over the n >= 1 structural floor. NOTE the widely-repeated '>= 5 shots are needed for a non-degenerate distribution' is NOT true of the code: gestalt_metrics.continuity_stats uses itertools.pairwise, sets n = shots - 1, and decides degeneracy solely by `if ordered[-1] <= 0.0` \u2014 there is no shot-count threshold anywhere in it, and its percentiles are hand-rolled nearest-rank precisely so they work at n == 1. The corpus-level sufficiency gate is over ROWS, not shots (scripts/gestalt_calibration_report.py DEFAULT_MIN_SAMPLES = 20 renders). Raise this back above 3 only with measured evidence from corpus runs that the count is reliably higher.\n\nNOTE: no expect_pixel_checks \u2014 the demo_video_compile artifact_url is a storage path (not http(s)), which the e2e_validate pixel downloader cannot fetch, so pixel checks would report a false negative even though the render (and the gestalt emit) succeeded.\n\nThe final_critique checks below are the REAL proof a calibration sample was produced. An empty `checks: []` (what this scenario carried until 2026-07-20) asserts NOTHING \u2014 e2e_validate.py:_eval_stage_assertions iterates `spec.get('checks') or []`, so an empty list only proves the stage did not raise. That mattered: when the video analyzer is unavailable, final_critique._reevaluate returns EARLY with gestalt={}, so the stage still completes and the run still passes while no sample whatsoever is produced. `numeric_gte` on gestalt_summary.continuity_stats.n >= 1 fails closed on exactly that path, and it is the ONLY check here \u2014 deliberately. Earlier revisions also asserted cohesion and loudness were present; both would FAIL CLOSED on a render that produced a perfectly usable sample. `final_mux_loudness` returns None when the compiler threaded no loudness block (and `integrated_lufs` is nullable even when it did), and `gestalt_metrics._loudness_ok` treats both cases as 'no objection' \u2014 so a genuine sample with no loudness measurement is valid evidence, not a failure. Same class for cohesion, which may legitimately become null for a degenerate film. `continuity_stats.n >= 1` alone is NOT sufficient, which is why there is a second check. When every adjacent-shot delta is exactly 0.0, gestalt_metrics.continuity_stats returns {\"n\": <pairs>, \"degenerate\": true} with NO min/max/mean/stdev/percentile keys \u2014 n is still >= 1, so an n-only assertion passes a render that measured NOTHING. That is currently the COMMON case: the analyzer emits no per-frame brightness/sharpness/colour, so five of six feature components are identical by construction (being fixed upstream in video_analyzer_service; a genuinely static screen-capture will always produce it regardless). So the real proof is `numeric_gte` on continuity_stats.max: on the degenerate shape the KEY IS ABSENT, _resolve_values yields [None], _eval_check finds no numeric value and FAILS CLOSED \u2014 the same way it already does for {}, a missing stage output, and null. A non-degenerate distribution always has max > 0 (max <= 0 is precisely what triggers the guard), so `>= 0` is a presence check that does not pre-judge the value being calibrated. These two checks together are exactly the workflow corpus predicate CORPUS_WHERE_SQL, which also demands a numeric max.\n\nDURATION (changed 2026-08-20, was 90): the ORDER must be reachable from the content this scenario pins, or every sweep render dies at reconcile_timeline's GROSSLY UNDERFULL gate having paid for the whole browser capture. MEASURED on prod runs 01a01d94 and 01a01d8d (both this scenario): 3 clips of 3.52 / 10.36 / 11.00s => 24.88s of content, 26.38s of renderer hold, against the 90s order = 29.3% (and 26.0% on the sibling run) -- below the 50% `pipeline.demo_timeline_underfull_fail_ratio` floor, so status=failed and NO gestalt sample was persisted. The count is NOT derivable here: `_scenarios_for_target` (orchestrator #866) sizes the bdd ask from target_duration_seconds, but an EXPLICIT `max_scenarios_per_feature` always wins ('an author who named a number meant it'), and this scenario names 3. Proof it is the override and not the derivation: bdd_jobs.config for job 01a01d94-b761-71a1-be5c-ec09aa3222ce recorded `max_scenarios_per_feature: 3`, not the 20 the 90s target would have derived. Raising the cap instead would multiply the cost of a LOOPED corpus sweep by ~6x and break the 'stays cheap and always completes' contract above, so the fix is the other half of the gate's own advice -- lower the target. 30s leaves 24.88s at 83% (and the leaner 21.88s run at 73%), a wide margin over the 50% floor. Do not raise this back toward 90 without ALSO removing the cap and re-measuring the per-clip seconds; the two numbers are one decision.\n\nASSERTION FLOORS RE-SIZED 2026-09-03 (>= 3 -> >= 2 on demo_video_gen `lines[].id`, script_doctor `lines[].id` and demo_video_record `clips[].line_id`). MEASURED over a 90-day window of completed `stage_outputs` on blueprint demo_video_v1: demo_video_gen distinct lines[].id min 1 / p50 2 / max 8 (n=61); script_doctor min 1 / p50 2 (n=57); demo_video_record distinct clips[].line_id min 0 / p50 2 (n=46). The `>= 3` this replaces was NOT reachable with margin. This brief pins `max_scenarios_per_feature: 3`, and the DURATION note above already records BOTH halves of why that matters: the cap is a MAXIMUM the model may undershoot ('nothing guarantees any particular minimum, since the count is ultimately the model's choice'), and raising it multiplies the cost of a LOOPED corpus sweep by ~6x. So the floor sat AT the ceiling and could only pass on a perfect draw -- structurally the SAME defect as the `>= 5` that failed on 2026-08-02, lowered rather than fixed. THE CAP IS DELIBERATELY LEFT AT 3: raising it buys no guaranteed minimum and does buy real runtime against a per-render `--deadline 3600` that already had to be raised from 1500s. 2 is NOT sized from the distribution -- the distribution's minimum is 1, so NO floor >= 2 clears it with margin, and saying otherwise would be the rotted premise this scenario has already shipped twice. 2 is the scenario's PURPOSE GATE: `gestalt_metrics.continuity_stats` sets n = shots - 1, so a one-shot film yields n = 0 adjacent pairs and carries ZERO calibration information -- precisely the degenerate example.com sample recorded above. A render that produces fewer than 2 shots is a worthless corpus row and SHOULD red. The same reasoning keeps `final_critique gestalt_summary.continuity_stats.n >= 1`, whose measured minimum over the same window is 0 (n=32): lowering it to 0 would leave this scenario with no proof-of-sample check at all, which is the vacuity the 2026-07-20 `checks: []` fix removed. Both are declared in `_floor_purpose_gates` below, so tests/test_e2e_scenario_contracts.py exempts them from the measured-minimum rule EXPLICITLY and with a stated reason, instead of them silently looking sized.",
+  "project": {
+    "type": "demo_video",
+    "title": "e2e-demo-video-calibration",
+    "brief": {
+      "target_url": "https://demo.playwright.dev/todomvc",
+      "max_scenarios_per_feature": 3,
+      "focus_areas": [
+        "add a new todo item",
+        "mark a todo as completed",
+        "filter todos by active and completed"
+      ],
+      "script_doctor": {
+        "enabled": true
+      }
+    },
+    "voice": {
+      "descriptor": "clear, instructional, calm",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "deliverables": [
+      {
+        "name": "Demo video 16x9",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 30
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {
+      "ship_gate": {
+        "mode": "critique_only"
+      }
+    }
+  },
+  "expect_terminal_status": [
+    "completed"
+  ],
+  "_floor_purpose_gates": {
+    "demo_video_gen.lines[].id": "PURPOSE GATE, not a sized floor. Measured min 1 (n=61, 2026-09-03), so no floor >= 2 clears the distribution. 2 is the minimum a gestalt sample can be computed from at all: continuity_stats sets n = shots - 1, so a 1-shot film measures nothing. A render below it is a worthless corpus row and must red.",
+    "script_doctor.lines[].id": "PURPOSE GATE. Same reason as demo_video_gen.lines[].id \u2014 the doctor rewrites line TEXT and must not drop the spine below the 2 shots the gestalt sample needs. Measured min 1 (n=57, 2026-09-03).",
+    "demo_video_record.clips[].line_id": "PURPOSE GATE. Same reason again, at the stage where the shots become real footage. Measured min 0 (n=46, 2026-09-03) \u2014 a 0-clip capture is a failed capture and must red here rather than be tolerated into the corpus.",
+    "final_critique.gestalt_summary.continuity_stats.n": "PURPOSE GATE. Measured min 0 (n=32, 2026-09-03). This is the ONLY check that proves a calibration sample was actually produced: final_critique._reevaluate returns early with gestalt={} when the analyzer is unavailable, and the stage still COMPLETES. Lowering it to 0 would make the whole scenario vacuous."
+  },
+  "expect_stage_assertions": [
+    {
+      "stage": "demo_video_gen",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "lines[].id",
+          "value": 2
+        },
+        {
+          "type": "nonempty",
+          "path": "lines[].text"
+        }
+      ]
+    },
+    {
+      "stage": "script_doctor",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "lines[].id",
+          "value": 2
+        },
+        {
+          "type": "nonempty",
+          "path": "lines[].text"
+        }
+      ]
+    },
+    {
+      "stage": "demo_video_record",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "clips[].line_id",
+          "value": 2
+        },
+        {
+          "type": "nonempty",
+          "path": "clips[].video_url"
+        }
+      ]
+    },
+    {
+      "stage": "demo_video_narrate",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "clips[].artifact_url"
+        }
+      ]
+    },
+    {
+      "stage": "demo_video_compile",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "artifact_url"
+        }
+      ]
+    },
+    {
+      "stage": "final_critique",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "numeric_gte",
+          "path": "gestalt_summary.continuity_stats.n",
+          "value": 1
+        },
+        {
+          "type": "numeric_gte",
+          "path": "gestalt_summary.continuity_stats.max",
+          "value": 0
+        }
+      ]
+    }
+  ]
+}

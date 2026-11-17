@@ -1,0 +1,66 @@
+{
+  "_doc": "LIVE PROOF for the C13 timing-relief loop (orch #651 arms relief, #655 structural cut/merge/reallocate). The relief loop shortens an OVER-BUDGET timeline; until now its only live trace was a `timeline_manifest=` STRING inside reconcile_timeline.notes[], which scripts/e2e_validate.py cannot parse — so the loop was provable only by the deterministic unit test tests/services/stages/demo_video/test_reconcile_timeline_structural.py, never by the e2e harness. This scenario asserts on the NEW typed `timeline_manifest` field (added to DemoVideoGenOutput) so a live run proves loop_iterations>=1 AND converged.\n\nOVER-BUDGET / ELASTIC DESIGN (why it converges): authored mode (brief.lines) gives EXACT control over the spine. The three lines are PURE VOICEOVER beats — no `clip`, no `claim_status`, no `locked`/`time_lock` — so every beat is UNPROTECTED and fully ELASTIC (elasticity 1.0). A VO beat's demand floor is words/wpm_max*60 = words/170*60. With word counts 40/30/25 the AUTHORED floors are 14.12s + 10.59s + 8.82s = 33.53s.\n\nDOCTOR-DECOUPLED TARGETS (2026-09-02 — read this before touching either number). The authored counts are NOT what reconcile_timeline sees: `script_doctor` runs FIRST and REWRITES these lines, and it is steered by the DELIVERABLE's `target_duration_seconds`, so its OUTPUT length is a function of THAT knob, not of how many words were authored. MEASURED across all four live runs of this scenario (2026-08-27 / 08-28 / 08-31 / 09-02), 95 authored words came back as 61 / 68 / 61 / 56 doctored words -> floors of 21.53s / 24.00s / 21.53s / 19.76s. Against the ORIGINAL `target_seconds: 20` that is a COIN FLIP: three runs stayed infeasible and the gate passed, and the fourth (matrix run 33590213252, orchestrator run 01a06087-f83b-7153-908c-acce5a5cd25a) trimmed to 19.76s <= 20s -> the timeline was FEASIBLE, `infeasible_beats()` was empty, relief CORRECTLY never armed, `timeline_manifest` was null, and a perfectly healthy product RED-ed the matrix on LLM trim variance alone. Two obvious repairs are both WRONG: authoring EVEN LONGER lines does nothing (the doctor rewrites to its own target regardless of input length — 95 words in, 56-68 words out either way), and LOWERING the deliverable's `target_duration_seconds` makes it STRICTLY WORSE (that is the very knob the doctor chases). THE FIX IS TO DECOUPLE THE TWO TARGETS, which the code already permits: `script_doctor._resolve_target` reads ONLY the deliverable `target_duration_seconds` (shared/script_doctor.py), while reconcile_timeline's target ladder PREFERS `direction.timing.target_seconds` and only falls back to the deliverable (reconcile_timeline.py `_resolve_timing_config`). So the deliverable STAYS at 20s — the doctor keeps aiming at a ~20s script — and the RELIEF target drops to 8s. Margin: the doctor's own aim point is 20 * 150/170 = 17.65s of floor (its rubric budgets words at _WPM=150, reconcile floors them at wpm_max=170), i.e. 2.2x above the 8s relief target, and the DEEPEST trim ever measured (56 words = 19.76s) is 2.47x above it. To make this premise false the doctor would have to emit <= 22 words TOTAL across three lines (~7 words each) — below every per-line count ever observed (minimum 16) and below its own rubric's length floors. RE-MEASURE these numbers if script_doctor's rubric, target resolution, or model changes; the static guard that pins the margin is tests/test_e2e_scenario_contracts.py::test_a_relief_premise_survives_the_script_doctor.\n\nSo Sum(min) is comfortably > 8s -> infeasible_beats() is non-empty -> the opt-in relief loop ARMS (relief.mode=auto). The timing-director can honestly SHORTEN or CUT/MERGE these unprotected elastic beats. Because EVERY beat is unprotected the protected floor is 0s <= 8s, so `_classify_convergence` can never return `cant_converge` here and no structural-relief CHILD RUN is ever spawned by this scenario; cutting down to the shortest surviving beat leaves ~5.6s <= 8s, so a re-solved timeline can still be FEASIBLE and the solver water-fills the freed seconds into the survivors. relief.score_threshold is set to 3.0 (not the 4.0 default): the moment the timeline is feasible the pacing-critic scores it in the 3.0-5.0 band, so best_score>=3.0 -> LoopResult.converged=True regardless of the rhythm read. A pure footage-pinned spine provably CANNOT converge (footage cut/merge is protected/rejected), which is exactly why these beats carry NO clip.\n\nASSERTIONS (deliberately ROBUST, not LLM-flaky): `numeric_gte timeline_manifest.run.loop_iterations >= 1` proves the relief loop ARMED and ran (loop-engine `passes` is >=1 whenever the loop runs; pass 1 = initial draft). `in timeline_manifest.run.convergence_outcome [\"converged\", \"progress\"]` (STRENGTHENED from `nonempty` 2026-09-13 \u2014 see the RESIDUAL HOLE CLOSED note in `_checks_doc`) proves #671's honest classifier POPULATED the typed manifest live WITH A SUCCESS OUTCOME, where `nonempty` accepted the crash literal `relief_failed` — timeline_manifest is `| None` and set only on a relief run, so a non-empty convergence_outcome establishes that the relief+classification path (orch #670/#671) executed end-to-end on the live cluster. Together they are the live proof that the machinery is wired and functioning. NOTE the earlier `converged >= 1` check was DROPPED on purpose: these three beats are unprotected/elastic (trim-eligible, no clip/claim/lock), so the structural prepass returns them unchanged and feasibility rests on the IN-PLACE trim loop shrinking the DOCTORED spine (56-68 words measured) to <=22 words in <=2 passes — an outcome of the live timing-director LLM's trim quality (a #651/#655-era property), NOT of #670/#671. Asserting converged=true live would red a working feature whenever the small director under-trims; the AUTHORITATIVE convergence proof is therefore the deterministic unit test tests/services/stages/demo_video/test_reconcile_timeline_structural.py (stubbed director), which this live gate supplements, not replaces.\n\nLIVE PREREQUISITE (how record reaches reconcile_timeline): reconcile_timeline runs AFTER demo_video_record. This is a PURE-VO authored spine (brief.lines only, no `clip`), so demo_video_gen emits bdd_job_id=\"\" and no package_url — i.e. there is NO footage SOURCE. As of the 2026-07-24 record-degrade hardening, demo_video_record DEGRADES on a footage-acquisition failure (no package_url and no bdd_job_id → nothing to record; likewise a terminal frontend_test_runner job failure) instead of hard-raising: it returns empty clips + a footage-gap note, `runs/_shared.py` translates the note into a `degraded` run, and the beats stay fully elastic (nothing pins them). So the run reaches reconcile_timeline and the relief loop arms + converges on the cuttable VO beats. `target_url` is required by record's input contract but is INERT on the no-source path (FTR is never called). Because these beats have no footage, downstream compile has no video for them; this scenario is DISPATCH/NIGHTLY-only (never gates promote) and its authoritative purpose is the reconcile_timeline manifest assertion. After any change to this spec DISPATCH the workflow and read the reconcile_timeline stage output before calling it green (see w2v_orchestrator/CLAUDE.md validation-strategy note).",
+  "project": {
+    "type": "demo_video",
+    "title": "e2e-demo-video-relief",
+    "brief": {
+      "target_url": "https://demo.playwright.dev/todomvc",
+      "lines": [
+        {
+          "id": "clip-tour",
+          "text": "Welcome to the product tour where we walk through every single feature in careful detail so that you understand exactly how the platform works end to end and why each capability matters for your team today right now and tomorrow."
+        },
+        {
+          "id": "clip-dashboard",
+          "text": "Next we open the dashboard and review the key metrics that drive daily decisions across sales, marketing, and support, giving everyone a shared view of what is happening right here."
+        },
+        {
+          "id": "clip-export",
+          "text": "Finally we export the report and share it with the wider team so the insights reach every stakeholder before the weekly planning meeting begins again."
+        }
+      ]
+    },
+    "voice": {
+      "descriptor": "clear, instructional, calm",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "deliverables": [
+      {
+        "name": "Demo video 16x9",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 20
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {
+      "direction": {
+        "timing": {
+          "mode": "auto",
+          "target_seconds": 8,
+          "relief": {
+            "mode": "auto",
+            "iterations": 2,
+            "score_threshold": 3.0
+          }
+        }
+      }
+    }
+  },
+  "_targets_deliberately_decoupled": "DELIBERATE, 2026-09-02. `direction.timing.target_seconds` (8) and the deliverable's `target_duration_seconds` (20) are NOT the same knob and must NOT be made to agree here. reconcile_timeline budgets against the 8, and `script_doctor` steers its rewrite against the 20 — so holding the deliverable HIGH is what stops the doctor trimming this spine feasible and disarming the relief loop this scenario exists to prove. See the DOCTOR-DECOUPLED TARGETS paragraph in `_doc` for the four measured runs and the 2.2x margin. Making these two numbers equal (as they were until 2026-09-02) reinstates the coin-flip red.",
+  "expect_terminal_status": ["completed", "degraded"],
+  "_checks_doc": "STRENGTHENED 2026-09-05, but deliberately NOT by pinning convergence_outcome — read this before 'finishing the job' by copying the twin.\n\nWHAT WAS ADDED. (a) `status: \"completed\"` — the spec omitted the stage status entirely, so reconcile_timeline could have been any status at all and the checks were still evaluated against whatever output it left. (b) `equals timeline_manifest.run.protected_beat_count == 0` (TimelineManifestRun.protected_beat_count, shared/time_budget.py:670, populated at reconcile_timeline.py:2075 from `sum(1 for line in lines if _is_protected(line, final_footage_ids))`). That is 0 BY CONSTRUCTION here: the three authored beats carry no `clip`, no `claim_status` and no `locked`/`time_lock`, which is the premise the whole `_doc` above rests on. Pinning it turns a silent premise-invalidation into a NAMED failure — exactly the defect class that reddened this scenario on 2026-09-02 and its twin on the same matrix — and it also makes `cant_converge` unreachable-and-asserted, since _classify_convergence can only return cant_converge when the PROTECTED floor exceeds the target and a zero protected floor never does.\n\nWHY convergence_outcome IS NOT PINNED TO A LITERAL. The twin demo_video_footage_relief can assert `equals \"cant_converge\"` because footage-pinned beats make that outcome deterministic. Here it is NOT: the `_doc` above documents four measured live runs in which the honest outcome swings between `converged` and `progress` purely on how hard the timing-director LLM trims the doctored spine, and it records that the earlier `converged >= 1` check was dropped for precisely that reason. `equals` is the only literal check the engine has (e2e_validate.py::_eval_check supports equals / numeric_gte / distinct_count_gte / nonempty — there is no set-membership or negation form), so pinning either literal would red a healthy run about half the time. Left as `nonempty`.\n\nRESIDUAL HOLE CLOSED 2026-09-13. It used to read: `nonempty` still accepts `\"relief_failed\"` \u2014 the outcome emitted when the relief loop RAISED (shared/time_budget.py:639-644) \u2014 so a CRASHED relief loop that still emits a manifest read GREEN on the one check this scenario exists to make. That is exactly the vacuous shape this corpus keeps producing: an assertion that the pipeline said SOMETHING, not that it said something good. The doc above correctly recorded why `equals` could not close it (the honest outcome swings `converged` <-> `progress` across four measured live runs, so pinning either literal reds a healthy run about half the time) and then concluded the engine offered nothing better. It now does: `in` (scripts/e2e_validate.py::_eval_in) takes an ALLOW-LIST of SUCCESS values, so the check is `in [\"converged\", \"progress\"]` \u2014 both honest outcomes pass, `relief_failed` fails, and so does every future failure literal nobody has seen yet, because the list is an allow-list rather than a deny-list. The rejected `pacing_score >= 0` workaround is moot and stays rejected.",
+  "expect_stage_assertions": [
+    {
+      "stage": "reconcile_timeline",
+      "status": "completed",
+      "checks": [
+        {"type": "numeric_gte", "path": "timeline_manifest.run.loop_iterations", "value": 1},
+        {"type": "in", "path": "timeline_manifest.run.convergence_outcome", "values": ["converged", "progress"]},
+        {"type": "equals", "path": "timeline_manifest.run.protected_beat_count", "value": 0}
+      ]
+    }
+  ]
+}

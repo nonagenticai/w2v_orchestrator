@@ -1,0 +1,19 @@
+url: https://app.example.com
+site_name: "Example App"
+
+auth:
+  type: form
+  login_url: https://app.example.com/login
+  username: demo@example.com
+  password: demo123  # pragma: allowlist secret
+
+crawl:
+  max_depth: 3
+  max_pages: 20
+  exclude_patterns:
+    - "/api/"
+    - "/admin/"
+
+generator:
+  parallel_workers: 2
+  timeout_seconds: 300

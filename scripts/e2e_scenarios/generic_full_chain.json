@@ -1,0 +1,88 @@
+{
+  "_doc": "The FIRST scenario that drives `generic_v1` to a completed deliverable. Four scenarios already name project type `generic` and NONE produces a master: `happy_path` pauses after brief_intake (it is the pause/cancel probe and is correct as-is), `multi_source_happy_path` pauses after source_ingest, and `panel_image_happy_path` / `storyboard_merge` use a throwaway generic project only to reach an API. So the generic blueprint — the default content type — has never been proven to render anything in E2E. This scenario closes that hole and nothing else.\n\nShape: the project/brief/voice block is copied VERBATIM from `happy_path.json`, because that block is the one already proven to thread through brief_intake (its five `equals` checks are the proof). Exactly two things change, and only the two that are required to reach a deliverable:\n  (1) `run.pause_after_stages: []` — explicit empty list = AUTOPILOT (src/api/schemas/runs.py:174-182). This is REQUIRED, not cosmetic: the generic blueprint declares `default_pause_after=True` on script_draft and storyboard_draft (src/services/blueprints/generic.py:32,39) and `default_pause_after_stages` seeds from those specs when the field is omitted (src/services/run_engine.py:140), so an omitted field would pause this run twice and never render. `promo_happy_path` carries the same explicit `[]` for the same reason.\n  (2) `expect_terminal_status: [\"completed\"]`.\n\nStages exercised end to end: brief_intake -> script_draft (LLM) -> storyboard_draft (LLM) -> narrate (TTS) -> video_render (video-compiler). ai_image_gen, ai_video_gen, motion_graphics_gen, source_ingest and media_discovery are all OPT-IN and skip clean without their config block (ai_image_gen.py:108-113), so this is the plain generic path with no GPU / image-backend / KAG dependency. That is deliberate: the first proof of a content type should fail for product reasons, not because mini1 was busy.\n\nDEADLINE: 3600s / timeout_minutes 70, the same pair `promo_happy_path` carries. Based on structural equivalence, NOT on a measurement — there is no measurement to base it on, because this blueprint has never completed a run in E2E. promo_v1 is the closest completing sibling: LLM script + LLM storyboard + TTS narrate + a single video-compiler master, the same five-stage shape and the same downstream services. It is deliberately generous rather than tight: a deadline below real runtime produces a FALSE RED, and this repo has been burned by exactly that (a promo reported failed at a 1200s budget that really took 1386s; app_review and course each produced the same false red twice in September). 3600 also stays under `pipeline.run_deadline_seconds` (7200), as tests/test_e2e_scenario_contracts.py::test_no_scenario_waits_longer_than_the_run_itself_may_live requires. RE-MEASURE this from the `runs` table after the first handful of green completions and size it the way the promo/course entries are sized (measured max x ~1.25), rather than leaving a structurally-guessed number in place forever.\n\n⚠️ The deadline is NOT a key in this file — the harness takes it from `--deadline-seconds` (scripts/e2e_validate.py:3324) and the matrix supplies it per scenario. This scenario therefore needs an entry in `scripts/e2e_scenarios/matrix.json` before anything runs it; that file was owned by another lane when this was written and is deliberately untouched here.",
+  "_ordered_duration_doc": "generic DOES read an ordered duration, and it reads it from the BRIEF, not from the deliverable. The chain is: `brief.target_duration_seconds` -> `src/services/stages/generic/brief_intake.py:47` (`int(brief.get(\"target_duration_seconds\", 60))`) -> `src/services/stages/generic/script_draft.py:106`, which writes it into the script prompt as \"Write a script for a {n}-second video\". That is the ONLY resolver: the generic blueprint has no reconcile_timeline stage and no `direction.timing.target_seconds` override, and nothing downstream of script_draft imposes a duration ceiling — a generic film is exactly as long as its narration.\n\nSo the order is set ONCE, in `brief.target_duration_seconds: 30`, matching happy_path's proven value. A deliverable-level `target_duration_seconds` is deliberately NOT set: no generic stage reads one, so adding it would be a number that steers nothing while making `_ordered_seconds` in the contract tests believe it is authoritative. Fabricating an order is the bug this branch removes.",
+  "project": {
+    "type": "generic",
+    "title": "e2e-generic-full-chain",
+    "brief": {
+      "angle": "contrarian",
+      "audience": "solo founders filing their own accounts",
+      "target_duration_seconds": 30
+    },
+    "voice": {"descriptor": "dry, understated, unhurried"},
+    "deliverables": [
+      {"name": "generic-full-chain-1", "format": "16x9"}
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+  "_assert_doc": "Two stage assertions, both copied in spelling from proven siblings.\n\nbrief_intake: the five `equals` checks are lifted UNCHANGED from happy_path.json, including its 2026-09-05 strengthening — angle/audience/voice_descriptor are set to values no default can produce (brief_intake defaults them to 'informational'/'general'/'neutral'), so they fail closed if the brief or the voice block is dropped from config_snapshot rather than passing vacuously. They are free here and they localise a threading failure to the first stage instead of to a blank film.\n\nvideo_render: `nonempty artifact_url` only — the same spelling `lesson_motion_slides_happy_path.json` uses on lesson_compile and `promo_happy_path.json` uses on promo_render. There is deliberately NO `numeric_gte duration_seconds` floor, unlike promo. A sized floor requires a measured minimum (tests/test_e2e_scenario_contracts.py `_MEASURED_FLOOR_MINIMA`, `_FLOOR_SAFETY = 2.0`) and this blueprint has produced ZERO completed E2E runs, so any number here would be invented, not sized — which is the exact defect that guard exists to catch. Add one once there are completions to measure, and record it in `_MEASURED_FLOOR_MINIMA` with its sample size in the same change.",
+  "_pixel_doc": "Media ACCEPTANCE probes on the delivered master (scripts/e2e_validate.py _MEDIA_CHECKS), spelled exactly as promo_happy_path.json and lesson_motion_slides_happy_path.json spell them. `artifact_reachable` proves the object downloads and DECODES (a non-blank url string proves neither); `audio_present` proves an audio stream exists AND is not digital silence (ffmpeg volumedetect mean/peak dBFS) — the single check most likely to catch a generic render that composited pictures over nothing; `resolution` reads the ENCODED width/height rather than the number the stage reports about itself; `stream_durations` measures the VIDEO and AUDIO stream durations SEPARATELY and never the container, because a container duration is the MAX over its streams and can never refute a truncated video track.\n\nThe stream_durations minima (3s video / 2s audio) are EMPTY-RENDER floors, not sized floors, and they are stated as such: this blueprint has no measured distribution yet. They are set far below anything a 30s order could plausibly yield so that they fail only on a stub or a one-frame render, and they must be re-derived from measured runs before anyone treats them as a quality gate.\n\n`duration_within_tolerance` is present but DISARMED (`\"enabled\": false`), matching every sibling except action_reel_happy_path.json — the ONE calibrated exemption — and the guard tests/scripts/test_e2e_media_probes.py::test_only_the_calibrated_scenario_arms_the_duration_tolerance_check. `ordered_seconds: 30` records the order the brief actually places (see _ordered_duration_doc). Arming it is out of scope here — duration calibration is in flight fleet-wide and a red instrument on known-in-flight work teaches people to ignore the instrument.",
+  "expect_pixel_checks": [
+    {
+      "stage": "video_render",
+      "path": "artifact_url",
+      "type": "artifact_reachable",
+      "min_bytes": 4096
+    },
+    {
+      "stage": "video_render",
+      "path": "artifact_url",
+      "type": "audio_present",
+      "true_peak_ceiling_dbtp": 0.0
+    },
+    {
+      "stage": "video_render",
+      "path": "artifact_url",
+      "type": "resolution",
+      "min_width": 1280,
+      "min_height": 720,
+      "aspect": "16x9"
+    },
+    {
+      "stage": "video_render",
+      "path": "artifact_url",
+      "type": "stream_durations",
+      "require_audio": true,
+      "min_audio_seconds": 2,
+      "require_video": true,
+      "min_video_seconds": 3
+    },
+    {
+      "stage": "video_render",
+      "path": "artifact_url",
+      "type": "duration_within_tolerance",
+      "enabled": false,
+      "ordered_seconds": 30
+    },
+    {
+      "stage": "video_render",
+      "path": "artifact_url",
+      "type": "declared_vs_measured",
+      "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+    }
+  ],
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "brief_intake",
+      "status": "completed",
+      "checks": [
+        {"type": "equals", "path": "title", "value": "e2e-generic-full-chain"},
+        {"type": "equals", "path": "target_duration_seconds", "value": 30},
+        {"type": "equals", "path": "angle", "value": "contrarian"},
+        {"type": "equals", "path": "audience", "value": "solo founders filing their own accounts"},
+        {"type": "equals", "path": "voice_descriptor", "value": "dry, understated, unhurried"}
+      ]
+    },
+    {
+      "stage": "video_render",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "artifact_url"}
+      ]
+    }
+  ]
+}

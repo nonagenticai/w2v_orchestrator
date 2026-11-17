@@ -1,0 +1,15 @@
+{
+  "_doc": "Dual-run frame-md5 determinism: compile a fixed text-card shot list twice and assert byte-identical per-frame md5. Requires tags.deterministic=true (bit-exact single-thread x264).",
+  "dual_run_compile": {
+    "payload": {
+      "shots": [
+        {"id": "s1", "seconds": 2.0, "description": "Determinism check A", "fit": "contain"},
+        {"id": "s2", "seconds": 2.0, "description": "Determinism check B", "fit": "contain"}
+      ],
+      "cadence": 30,
+      "tags": {"deterministic": "true"}
+    },
+    "_deadline_doc": "Per-compile poll budget, read ONLY from this file (e2e_validate.py:2362); the workflow --deadline and matrix.json `deadline` do NOT reach it. Raised 300->900 on 2026-08-25: run 32659499709 failed here with run 1 still 'processing' at ~314s, so the md5 comparison never ran and determinism went UNTESTED, not disproved. An ordinary compile logs duration_seconds~140, so 300 was a coin flip against a busy 2-replica compiler. 2x900=1800s stays inside matrix.json deadline 3000 / timeout_minutes 60.",
+    "deadline_seconds": 900
+  }
+}

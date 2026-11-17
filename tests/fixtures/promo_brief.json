@@ -1,0 +1,32 @@
+{
+  "title": "Anti-Churn 30-day playbook",
+  "type": "promo",
+  "brief": {
+    "angle": "growth",
+    "audience": "B2B SaaS founders",
+    "target_duration_seconds": 45,
+    "value_proposition": "Cut churn 20% in 30 days with these three moves.",
+    "call_to_action": "Get the playbook.",
+    "primary_color": "#1F6FEB"
+  },
+  "brand": {
+    "logo_url": "https://stub.local/logo.svg",
+    "font": "Inter"
+  },
+  "voice": {
+    "descriptor": "confident, crisp, founder-to-founder",
+    "model_preference": "qwen3-coder-30b"
+  },
+  "theme": {
+    "background": "#0B0E14",
+    "accent": "#1F6FEB"
+  },
+  "deliverables": [
+    {
+      "name": "16x9 hero",
+      "format": "16x9",
+      "captions_mode": "burned_in",
+      "target_duration_seconds": 45
+    }
+  ]
+}

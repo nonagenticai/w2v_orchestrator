@@ -1,0 +1,11 @@
+# Documentation + override seam. SOURCE OF TRUTH: `_BUILTIN_BASELINE` in
+# ../presets.py (see default.yaml header). Not parsed in this slice.
+name: demo_forward
+wpm: 155.0
+vo_lufs: -15.0
+mood_default: confident
+voice_count: 2
+dialogue_enabled: true
+transition_style: cut
+card_templates: [title_bullets, value_prop, cta]
+checkpoint_mode: preview

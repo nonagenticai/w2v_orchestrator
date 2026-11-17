@@ -1,0 +1,65 @@
+{
+  "_doc": "LIVE-FIRE for PR-C bounded auto-convergence gen re-run. Unlike demo_video_relief (pure-VO ELASTIC beats → convergence_outcome=progress, in-place trim's job), this scenario records REAL footage against TodoMVC and pins an AGGRESSIVE target so the recorded clips overrun it: every over-budget beat is footage-pinned (its reconciled seconds == its measured clip length, elasticity 0), so reconcile_timeline can neither trim nor cut/merge/reallocate it in place → convergence_outcome=cant_converge (orch #671). That is EXACTLY the trigger for PR-C: when the (degraded) parent run completes, the run dispatcher's post-completion hook (maybe_spawn_structural_relief_run) spawns ONE bounded child regenerate run from demo_video_gen with a smaller target_beats (cutting the over-budget footage culprits first), fresh run_id (upstream preserved, no re-bill), bounded to <=2 passes.\n\nWHAT THIS SPEC ASSERTS (the parent): the run reaches reconcile_timeline and emits a non-empty typed convergence_outcome, and the terminal status is completed/degraded (a real MP4 exists, just over budget). It CANNOT assert on the spawned child — that is a SEPARATE run_id the e2e harness does not follow — so the child-spawn proof is a DB query after the run: `select id, structural_relief_pass from runs where parent_run_id = <this run> and structural_relief_pass is not null` returns the pass-1 child. The target (30s) is chosen so the CHILD can actually CONVERGE: the parent's ~6 footage beats total ~114s (>> 30 → cant_converge), and the culprit-first cut reduces the child to ~1 beat (~19s) which is <= 30 → feasible → the child's reconcile_timeline should report convergence_outcome=converged. REQUIRES the PR-C kill-switch ON: set PIPELINE_STRUCTURAL_RELIEF_AUTOCONVERGE_ENABLED=true in the w2v configmap (default OFF), or the post-completion hook no-ops and no child spawns. DISPATCH-ONLY (nightly:false); it deliberately pays for extra renders, so it never gates promote. After dispatch, read the reconcile_timeline stage output AND query the child (`select id, status, structural_relief_pass from runs where parent_run_id=<this run> and structural_relief_pass is not null`) before calling it green. ⚠️ target RESTORED 30 -> 5 on 2026-08-23. #678 set 5; #681 retuned it to 30 with a reason that WAS valid then — 'parent's ~6 footage beats (~114s) still overrun 30s' — i.e. ~19s PER BEAT. Measured on run 01a0302d today: 2 pinned beats, sum 6.76s, mean 3.38s/beat. Clips are ~5x shorter because filmed DEAD TIME was deliberately removed (bdd #122 and the 2026-08-17..19 duplicate-frame work) — correct behaviour, but it invalidates every target calibrated against padded clips. At 30s this scenario is UNDER-full (22.5%) and dies at the gate before the relief path it exists to test can run; at 5s today's 6.76s of real footage OVERRUNS it, which is the cant_converge trigger the _doc above describes. #681's worry that 'at 5s no single clip fit' was about 19s clips; 3.38s clips fit. ⚠️ 2026-08-28: #903's edit was PARTIAL and this scenario failed AGAIN (run 33144609129) at 10.46s of a 30.00s target. #903 changed only the deliverable's target_duration_seconds 30 -> 5; it left run.config_overrides.direction.timing.target_seconds at 30. Those are not two copies of one number: reconcile_timeline's target ladder (_resolve_timing_config) takes direction.timing.target_seconds FIRST and only falls back to the deliverable, so the 5 was DEAD and the gate still measured against 30. Both were then set to 5. \u26a0\ufe0f SUPERSEDED 2026-09-02 (see the RETUNED note at the end): they are now DELIBERATELY 2.0 (timing) vs 5 (deliverable), because they are not two copies of one number in the other direction either \u2014 script_doctor steers on the deliverable\u2019s. The beat count is NOT the bug and must not be 'fixed' in gen: brief.max_scenarios_per_feature=2 is EXPLICIT here, so _scenarios_for_target short-circuits before _SECONDS_PER_SCENARIO is ever consulted — deriving the count from realised yield would change nothing on this path. 2 clips is the ORDER, not a shortfall. The underfull gate and its #915 yield-attribution line are correct and stay armed. \u26a0\ufe0f RETUNED 5 -> 2.0 on 2026-09-02, and the deliverable target_duration_seconds DELIBERATELY LEFT AT 5. This scenario failed in matrix run 33590213252 on a HEALTHY run (01a06089-13a0-76bd-86c0-677c117638b7: completed, error NULL, all 16 stages completed/skipped, MP4 produced; the job failed 17s LATER on the assertion). The relief loop ARMED (loop_iterations=2, that check passed); what failed is `convergence_outcome == \"cant_converge\"` — it came back `converged`. MECHANISM: cant_converge requires the PROTECTED floor (Sum of the footage-pinned beats min_seconds, which equal their measured clip lengths) to EXCEED the target. On that run the two pinned beats measured clip-1=2.52s and clip-2=2.32s, Sum=4.84s <= the 5.0s target, so the timeline was FEASIBLE and `_classify_convergence` honestly returned `converged`. The premise had been invalidated by this scenario\u2019s OWN upstream capture stage getting shorter — the same defect class as demo_video_relief, but a different mechanism (a shrinking measured floor, not a script rewrite; script_doctor cannot touch a pinned beat, which is why the earlier \u201cimmune by construction\u201d reading of this scenario was WRONG). MEASURED Sum of pinned-beat min_seconds, every run with a manifest: 2026-08-23 (01a0302d) 6.76s [3.38 + 3.38]; 2026-08-31 (01a05992) 10.04s [1.80 + 8.24] -> cant_converge, spawned a pass-1 child; 2026-09-02 (01a06089) 4.84s [2.52 + 2.32] -> converged, RED. So this is NOT a monotone shrink but high VARIANCE — Sum ranged 4.84-10.04s in ten days and single clips ranged 1.80-8.24s — straddling a 5.0s target, i.e. a coin flip. 2.0 sits below the LOWEST Sum ever measured (4.84s) with 2.42x headroom; breaking it needs both clips under 1.0s, half the shortest clip ever observed (1.80s). WHY NOT DERIVE IT AT RUNTIME: `_resolve_timing_config` reads `target_seconds` as a bare `float()` — there is no ratio/relative form — and the target must exist at RUN-CREATION time while footage is not measured until demo_video_record, mid-run. A footage-relative target is a reconcile_timeline CODE change affecting every tenant, not a scenario edit. WHY NOT RAISE THE FOOTAGE INSTEAD: brief.max_scenarios_per_feature=2 over 2 focus_areas already permits 4 clips and realised yield has been exactly 2 in every run, so raising the CAP is not a lever on Sum. TRADE-OFF, STATED: the `_doc` above wants the target high enough that the spawned CHILD can converge on its surviving beat. At 2.0 a child whose smallest beat is 2.32s will not converge. That is accepted — child convergence is NOT asserted by this spec (the harness cannot follow a second run_id; it is a DB query) and it was ALREADY variance-dependent (smallest observed clip 1.80s vs 2.32s). The ASSERTED parent premise is what this gate is for and it is what gets the headroom. The static guard pinning this margin is tests/test_e2e_scenario_contracts.py::test_a_cant_converge_premise_survives_shrinking_footage — RE-MEASURE the Sum and raise/lower both together if capture changes again.",
+  "project": {
+    "type": "demo_video",
+    "title": "e2e-demo-video-footage-relief",
+    "brief": {
+      "target_url": "https://demo.playwright.dev/todomvc",
+      "max_scenarios_per_feature": 2,
+      "focus_areas": [
+        "add a new todo item",
+        "mark a todo as completed"
+      ]
+    },
+    "voice": {
+      "descriptor": "clear, instructional, calm",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "deliverables": [
+      {
+        "name": "Demo video 16x9",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 5
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {
+      "direction": {
+        "timing": {
+          "mode": "auto",
+          "target_seconds": 2.0,
+          "relief": {
+            "mode": "auto",
+            "iterations": 2,
+            "score_threshold": 3.0
+          }
+        }
+      }
+    }
+  },
+  "_targets_deliberately_decoupled": "DELIBERATE, 2026-09-02. `direction.timing.target_seconds` (2.0) is the number reconcile_timeline budgets against and must sit BELOW the measured footage floor for the cant_converge premise to hold; the deliverable's `target_duration_seconds` (5) is what script_doctor steers its VO rewrite against, and dropping THAT to 2.0 would ask for a ~5-word script. The beats here are footage-pinned and marked unsayable, so the VO target is incidental to the assertion. Making these two numbers equal reinstates the coin-flip red — see the RETUNED 5 -> 2.0 note in `_doc` for the three measured runs.",
+  "expect_terminal_status": [
+    "completed",
+    "degraded"
+  ],
+  "expect_stage_assertions": [
+    {
+      "stage": "reconcile_timeline",
+      "checks": [
+        {
+          "type": "numeric_gte",
+          "path": "timeline_manifest.run.loop_iterations",
+          "value": 1
+        },
+        {
+          "type": "equals",
+          "path": "timeline_manifest.run.convergence_outcome",
+          "value": "cant_converge"
+        }
+      ]
+    }
+  ]
+}

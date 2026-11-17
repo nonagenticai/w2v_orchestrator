@@ -1,0 +1,109 @@
+{
+  "_doc": "Full course blueprint run: course_outline → course_compile_lessons (fans out child lesson runs) → course_stitch (concatenates the per-lesson MP4s + emits one chapter marker per lesson). The outline stage exercises a single LLM call; compile_lessons exercises orchestrator's ability to spawn + await child runs, which is the highest-risk piece because it crosses the run dispatcher boundary. The course_stitch assertion proves chapter markers are derived from the real per-lesson durations: a non-blank title per lesson and >=2 distinct start offsets (so the first is 0 and the second is the cumulative offset, not all-zero). `config_overrides.course_thumbnail:false` SUPPRESSES the AI cover (course_thumbnail StageSkips) so this scenario does not add a second GPU image-gen call beyond the per-slide lesson images already exercised here; the cover path is covered by unit + youtube-route tests and the best-effort thumbnail never gates the run.",
+  "project": {
+    "type": "course",
+    "title": "30-day Anti-Churn Course",
+    "brief": {
+      "audience": "B2B SaaS founders",
+      "outcome": "Cut churn 20% in 30 days.",
+      "lesson_count": 2
+    },
+    "voice": {"descriptor": "founder-to-founder, calm, direct"},
+    "brand": {"font": "Inter"},
+    "theme": {"background": "#0B0E14", "accent": "#1F6FEB"},
+    "deliverables": [
+      {
+        "name": "Course intro",
+        "format": "16x9",
+        "captions_mode": "burned_in",
+        "target_duration_seconds": 60
+      }
+    ],
+    "lessons": [
+      {
+        "title": "Lesson 1 — Diagnosing churn",
+        "brief": {
+          "duration_minutes": 6,
+          "learning_objective": "Identify the top 3 churn drivers in your data."
+        },
+        "deliverables": [
+          {
+            "name": "Lesson 1 video",
+            "format": "16x9",
+            "captions_mode": "burned_in",
+            "target_duration_seconds": 360
+          }
+        ]
+      },
+      {
+        "title": "Lesson 2 — Anti-churn playbook",
+        "brief": {
+          "duration_minutes": 7,
+          "learning_objective": "Apply the 3-move playbook to your top accounts."
+        },
+        "deliverables": [
+          {
+            "name": "Lesson 2 video",
+            "format": "16x9",
+            "captions_mode": "burned_in",
+            "target_duration_seconds": 420
+          }
+        ]
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": { "course_thumbnail": false }
+  },
+    "_pixel_doc": "Media ACCEPTANCE probes on the delivered master (scripts/e2e_validate.py _MEDIA_CHECKS). Before these, this scenario proved a url was a non-blank string and nothing about the bytes behind it. `artifact_reachable` proves the object downloads and decodes; `audio_present` proves an audio stream exists AND is not digital silence (ffmpeg volumedetect mean/peak dBFS); `resolution` reads the ENCODED width/height, not the number the stage reports about itself; `stream_durations` measures the VIDEO and AUDIO stream durations SEPARATELY and never the container -- a container duration is the MAX over its streams, so it can never refute a truncated video track. Floors are the ones this scenario's existing green assertions already prove, never new tuning numbers.\n\n`duration_within_tolerance` is present but DISARMED (`\"enabled\": false`). It compares the delivered stream length against `ordered_seconds` at the SAME +/-10% the pipeline's own duration_conformance uses. Flip `enabled` to true to arm it -- deliberately not armed while the duration calibration work is in flight, because a red instrument on known-in-flight work teaches people to ignore the instrument.",
+    "expect_pixel_checks": [
+      {
+        "stage": "course_stitch",
+        "path": "artifact_url",
+        "type": "artifact_reachable",
+        "min_bytes": 4096
+      },
+      {
+        "stage": "course_stitch",
+        "path": "artifact_url",
+        "type": "audio_present",
+        "true_peak_ceiling_dbtp": 0.0
+      },
+      {
+        "stage": "course_stitch",
+        "path": "artifact_url",
+        "type": "resolution",
+        "min_width": 1280,
+        "min_height": 720,
+        "aspect": "16x9"
+      },
+      {
+        "stage": "course_stitch",
+        "path": "artifact_url",
+        "type": "stream_durations",
+        "require_audio": true,
+        "min_audio_seconds": 30,
+        "max_stream_skew_seconds": 0.5,
+        "require_video": true,
+        "min_video_seconds": 30
+      },
+      {
+        "stage": "course_stitch",
+        "path": "artifact_url",
+        "type": "declared_vs_measured",
+        "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+      }
+    ],
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "course_stitch",
+      "status": "completed",
+      "checks": [
+        { "type": "nonempty", "path": "chapters[].title" },
+        { "type": "distinct_count_gte", "path": "chapters[].start_seconds", "value": 2 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "_doc": "Panel-image generation E2E — the ONLY check in this repo that drives storyboard panel image generation against real hardware (every other one mocks the ai_content_generation client). It creates a throwaway generic project, seeds ONE panel whose action_description the validator salts with a fresh uuid7 + wall clock, POSTs /api/storyboard/panels/{id}/image, polls the job to terminal, and then verifies the RESULT BYTES. What each assertion falsifies: (1) HTTP 202 on submit — a 200 would mean the route answered synchronously, which no real generation can do; (2) the job never reaches `failed` — its `error` is surfaced verbatim so the generator's own message is in the run log; (3) gen.reused is false — a `true` proves the content-addressed reuse cache answered and NO generator ran, which is why the direction is salted (a cache hit must be unreachable); (4) gen.seed is an int — the provenance the re-roll/pin contract is built on; (5) the url is re-read from the PANEL, not the job — the job's media_ref.url is signed at generation time and never re-signed, so asserting on it would prove nothing about what a client reading the board later gets; (6) that url's path is NOT under /api/concept-images/ — that prefix is the license-gated ACG download path, i.e. src/services/storyboard/render.py's mandatory re-publish silently did not happen; (7) it fetches HTTP 200 with a client carrying NO headers — the whole reason re-publish exists is so an operator's browser can load the frame, and the outer client sets X-Tenant-Id at CLIENT level so this needs its own client; (8) PNG signature + >100000 bytes + IHDR dimensions 1024x1024 parsed by hand (no PIL in the ConfigMap-mounted script) — a 200 response is not an image, and an image is not a full-resolution one. NONE of that rules out a valid PNG of grey noise, so the validator prints the final public url on a `PANEL_IMAGE_URL:` line: a human has to open it and make that call. Teardown archives the throwaway project (the default cleanup mode); set \"cleanup\": \"keep\" to leave the project row in place for inspection.",
+  "panel_image": {
+    "panel": {
+      "shot_key": "clip-1"
+    },
+    "request": {
+      "size": "1024x1024"
+    }
+  },
+  "project": {
+    "type": "generic",
+    "title": "e2e-panel-image",
+    "brief": {},
+    "deliverables": [
+      {"name": "panel image proof", "format": "16x9", "captions_mode": "none"}
+    ]
+  }
+}

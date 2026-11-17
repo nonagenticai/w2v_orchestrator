@@ -1,0 +1,52 @@
+{
+  "title": "30-day Anti-Churn Course",
+  "type": "course",
+  "brief": {
+    "audience": "B2B SaaS founders",
+    "outcome": "Cut churn 20% in 30 days.",
+    "lesson_count": 2
+  },
+  "voice": {"descriptor": "founder-to-founder, calm, direct"},
+  "brand": {"font": "Inter"},
+  "theme": {"background": "#0B0E14", "accent": "#1F6FEB"},
+  "deliverables": [
+    {
+      "name": "Course intro",
+      "format": "16x9",
+      "captions_mode": "burned_in",
+      "target_duration_seconds": 60
+    }
+  ],
+  "lessons": [
+    {
+      "title": "Lesson 1 — Diagnosing churn",
+      "brief": {
+        "duration_minutes": 6,
+        "learning_objective": "Identify the top 3 churn drivers in your data."
+      },
+      "deliverables": [
+        {
+          "name": "Lesson 1 video",
+          "format": "16x9",
+          "captions_mode": "burned_in",
+          "target_duration_seconds": 360
+        }
+      ]
+    },
+    {
+      "title": "Lesson 2 — Anti-churn playbook",
+      "brief": {
+        "duration_minutes": 7,
+        "learning_objective": "Apply the 3-move playbook to your top accounts."
+      },
+      "deliverables": [
+        {
+          "name": "Lesson 2 video",
+          "format": "16x9",
+          "captions_mode": "burned_in",
+          "target_duration_seconds": 420
+        }
+      ]
+    }
+  ]
+}

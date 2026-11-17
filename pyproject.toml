@@ -1,0 +1,278 @@
+[project]
+license = "Apache-2.0"
+name = "w2v-orchestrator"
+version = "0.1.0"
+description = "Orchestrator microservice for the w2v (web-to-video) platform. Executes per-project-type DAG blueprints, dispatching stages to downstream microservices via HTTP clients."
+requires-python = ">=3.14"
+dependencies = [
+    "typer>=0.24.0",
+    "rich>=14.3.0",
+    "httpx>=0.28.0",
+    "pydantic>=2.12.0",
+    "pydantic-settings>=2.13.0",
+    "pyyaml>=6.0.3",
+    "Pillow>=13.0.0",
+    "beautifulsoup4>=4.14.0",
+    "lxml>=6.1.0",
+    # Manuscript parsing for the audiobook pipeline (audiobook_ingest stage).
+    "python-docx>=1.1.2",
+    "EbookLib>=0.18",
+    # In-process PDF text + image extraction for source_ingest document sources
+    # (KAG removal; src/services/documents/extract.py). BSD-3, pure Python, no
+    # torch. >=6.19.0 is the CVE floor ingestion_service used for the same parser.
+    "pypdf>=6.19.0",
+    "fastapi>=0.135.0",
+    # Required at IMPORT time by the audiobook manuscript-upload route
+    # (src/api/routes/uploads.py declares a multipart File/Form endpoint).
+    # FastAPI raises at decoration time if python-multipart is absent, so the
+    # whole app fails to import. Was dev-only → the production image
+    # (`uv sync --frozen --no-dev`) never installed it → crashloop. Same class
+    # of trap as the OTel deps below; keep it in MAIN deps.
+    "python-multipart>=0.0.20",
+    "uvicorn[standard]>=0.41.0",
+    "psycopg[binary]>=3.3.0",
+    "sqlalchemy[asyncio]>=2.0.48",
+    "alembic>=1.18.0",
+    "redis>=7.3.0",
+    "miniopy-async>=1.23.0",
+    "prometheus-client>=0.24.0",
+    "python-dotenv>=1.2.0",
+    "cachetools>=7.0.0",
+    "PyJWT>=2.15.1",
+    "defusedxml>=0.7.1",
+    # >=0.51.0 for w2v_common.net.safe_get / validate_public_url (SSRF guard with
+    # CGNAT blocking, IP pinning, manual redirect re-validation).
+    # >=0.72.0 (S95) for AuthMiddleware._apply_effective_tenant stamping
+    # request.state.tenant_delegated — require_known_tenant (src/api/routes/
+    # _common.py) reads it via getattr(..., False) so it degrades safely on an
+    # older w2v-common, but the 403-on-delegated-tenant bug this floor exists
+    # to fix is only actually resolved once THIS version resolves at runtime.
+    # >=0.90.0 (P2 tenancy WP2) for register_api_key_verifier / TENANT_API_KEY_PREFIX,
+    # TenantSource.MEMBERSHIP + TENANT_API_KEY (vouched), User.email_verified /
+    # api_key_id and AUTH_JWT_TENANT_REQUIRED — src/auth/tenancy_middleware.py.
+    # >=0.92.1 (P7) for auth.cell_jwt (cell_token_event_hook, mint_service_cell_token,
+    # cell_audience_for_url) — src/api/routes/_proxy.py, src/clients/youtube_upload_client.py.
+    # >=0.106.0 (KAG removal) for clients.WebscraperClient / ImageRef and the
+    # webscraper + media_discovery discovery peers and licence-lane app keys.
+    # >=0.111.0 (realm-per-app P0) for multi-issuer Keycloak verification
+    # (KEYCLOAK_TRUSTED_ISSUERS / KEYCLOAK_SERVICE_ONLY_REALMS, User.realm).
+    "w2v-common>=0.113.0",
+    "sse-starlette>=2.1.0",
+    # OTel SDK + OTLP HTTP exporter. Was optional ([project.optional-dependencies].otel)
+    # so the production Dockerfile (`uv sync --frozen --no-dev`) never installed it,
+    # leaving setup_tracing() to silently degrade to ImportError → tracing disabled.
+    # The cluster ConfigMap has set OTLP_TRACES_ENDPOINT for months; moving SDK +
+    # exporter to main deps wires actual export to alloy. Verified by sibling
+    # trace probe (scripts/verify_otel_export.py) + unit test using InMemorySpanExporter.
+    # 1.45.1 floor: CVE-2026-114603 (opentelemetry-api 1.44.0). The SDK/exporter
+    # move with it so the family stays on one release.
+    "opentelemetry-api>=1.45.2",
+    "opentelemetry-sdk>=1.45.1",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.1",
+    # --- Security floors on transitive dependencies ---
+    # Neither of these is imported by this service directly; both arrive through
+    # other pins — aiohttp via miniopy-async (the MinIO client behind
+    # StorageService, and the streaming connection the artifact_proxy route
+    # holds open) and aiohttp-retry; cryptography via w2v-common, which depends
+    # on it directly AND pulls pyjwt[crypto]. The fleet-wide sweep already moved
+    # the LOCK to safe versions; these floors are what stop it drifting back. A
+    # lock is a point-in-time resolution, so the next unrelated `uv lock` is
+    # free to walk an undeclared transitive back down again. The declared floor
+    # is the only thing that binds it. Precedent + shape: analysis_service
+    # PRs #175/#176.
+    #
+    # aiohttp 3.14.1 was flagged by CVE-2026-59881 + CVE-2026-69243 (fixed in
+    # 3.14.2) and CVE-2026-69244 (fixed in 3.14.3); 3.14.3 clears all three.
+    "aiohttp>=3.14.3",
+    # cryptography: CVE-2026-69247 (GHSA-g6cj-pr64-35w5) was introduced in
+    # 44.0.0 and fixed in 50.0.0, so anything previously locked below 50 was
+    # affected. Matches the floor analysis_service and kag_common record for
+    # the same CVE.
+    "cryptography>=50.0.0",
+    "reportlab>=5.0.0",
+    "pydantic-ai-slim[anthropic,openai]>=2.53.0,<3",
+    # jsonschema: Draft 2020-12 validation of the direct-vLLM backend's structured
+    # output (src/services/llm/vllm_direct.py) -- the check WM applied before.
+    "jsonschema>=4.25,<5",
+]
+
+[tool.uv]
+override-dependencies = [
+    # miniopy-async (1.23.5, the LATEST) caps the CA-certificate bundle:
+    #   certifi>=2025.1.31,<2026.0.0
+    # That is lazy upper-bounding, not a real incompatibility -- certifi's entire
+    # public API is where()/contents() and has been stable for years, while the
+    # package's whole purpose is to ship CURRENT roots. Left alone the cap pins
+    # every MinIO-using repo in this fleet to a trust store from Nov 2025, and no
+    # relock cadence can move it (verified by making uv name the constraint).
+    #
+    # NOT overriding miniopy-async's argon2-cffi<24.0.0 alongside it: that is a
+    # MAJOR bump with real API surface, so it needs its own testing rather than
+    # riding along with a data-only package.
+    "certifi>=2026.7.22",
+]
+
+[tool.uv.sources]
+# The published source tree resolves its shared library from the public
+# repository at the release tag; the private index is not reachable here.
+w2v-common = { git = "https://github.com/nonagenticai/w2v_common", tag = "v0.115.4" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-m 'not integration and not cross_service_monorepo'"
+# ⚠️ Every marker named in the deselection above runs on NO machine unless
+# `.github/workflows/ci-cd.yaml` re-selects it via the archetype's
+# `integration_test_select` / `neo4j_test_select`. It does NOT. Until
+# 2026-09-07 that silently hid 80 tests across 7 files, including PR #769's
+# seven route-boundary tests for the cross-tenant artifact-adoption defence —
+# unwiring that guard was a green diff. `tests/test_no_unrun_marker_tests.py`
+# now fails loudly if any test wears one of these without an explicit,
+# reasoned waiver. Do not add a marker here without wiring or policing it.
+markers = [
+    "integration: tests needing a LIVE PEER SERVICE or real outbound network — NOT merely Postgres/Redis, both of which CI provides. Deselected below and re-selected nowhere, so anything wearing this executes only on a developer's box. Currently worn by ZERO tests; see tests/test_no_unrun_marker_tests.py.",
+    "cross_service_monorepo: tests that require sibling downstream service repos to be checked out alongside w2v_orchestrator (local monorepo layout). De-selected in per-service CI; run locally with -m cross_service_monorepo. Currently worn by ZERO tests.",
+]
+filterwarnings = [
+    # AsyncMock with side_effect lists creates intermediate coroutines that
+    # get garbage-collected before being awaited — known CPython stdlib quirk
+    "ignore::RuntimeWarning",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.0",
+    "pytest-asyncio>=1.3.0",
+    "ruff>=0.15.0",
+    "ty>=0.0.23",
+    "pip-audit>=2.10.0",
+    "detect-secrets>=1.5.0",
+    "pytest-cov>=7.0.0",
+    "bandit>=1.9.4",
+    "fakeredis>=2.34.0",
+    "pytest-timeout>=2.4.0",
+    "pytest-xdist>=3.8.0",
+    # Required by tests that mount FastAPI routes using File/Form (the
+    # transcription_worker_service contract test in
+    # tests/integration/test_in_process_dispatch.py mounts a real
+    # multipart endpoint to validate the orchestrator client's payload).
+    "python-multipart>=0.0.20",
+    "ada-url>=4.0.0",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "src/database/migrations/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+# ruff 0.16 began formatting Python inside MARKDOWN fences; 0.15 did not.
+# Measured on this repo at the 0.15.11 -> 0.16.5 bump: `ruff format --check docs/`
+# says "No Python files found" on 0.15.11 and "11 files would be reformatted" on
+# 0.16.5. Those 11 are dated historical design records (docs/plans/2026-05-07-*,
+# docs/superpowers/plans/2026-05-08-*, docs/superpowers/specs/2026-03-30-*), whose
+# illustrative snippets are a record of what was PROPOSED at the time. Rewriting
+# them to today's formatter changes the record for no benefit, and would recur on
+# every future ruff release.
+#
+# This narrows the FORMATTER's scope to source; it does not weaken a gate. Lint
+# still runs over the whole tree, and every .py file is still formatted and checked
+# -- `ruff format --check .` remains a hard gate in CI.
+extend-exclude = ["docs/**/*.md"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "I", "N", "W", "UP", "ANN", "B", "BLE", "A", "S", "C901",
+    "RUF", "RET", "SIM", "ASYNC", "PTH", "TID251",
+]
+ignore = [
+    "E501",
+    "B008",
+    # ANN401 (BARE `Any` in a signature — `x: Any`, `-> Any`, `**kw: Any`) is NOT
+    # globally ignored. It is enforced repo-wide via a shrinking per-file-ignore
+    # RATCHET below: the ~80 files that still carry a bare `Any` signature are
+    # grandfathered, and every typed-model PR deletes its file(s) from that list.
+    # Bare `Any` can only go DOWN; a new one in a cleaned file fails CI.
+    # NOTE: ANN401 does NOT flag NESTED `Any` (`dict[str, Any]`) — that far larger
+    # surface is governed by the count RATCHET in tests/test_any_ratchet.py, which
+    # runs in CI (pytest) and blocks any increase.
+    # ASYNC240 (pathlib in async) requires anyio.Path refactor across
+    # production async paths; fleet-wide follow-up. Sync stat calls in
+    # async handlers are microsecond-fast, not a latency hotspot today.
+    "ASYNC240",
+    # ASYNC109 (async fn with timeout param) is the canonical w2v HTTP
+    # client wrapper API — `timeout` is forwarded to httpx as request
+    # deadline + used to gate poll loops. asyncio.timeout would couple
+    # caller to event-loop context; we want the explicit-parameter design.
+    "ASYNC109",
+]
+
+# uuid7 is the id standard (stdlib, py3.14). TID251 bans `uuid4` in production
+# code via ruff — so it is enforced in CI (`ruff check .`), not only in local
+# pre-commit. Migrations are exempt (0012 pins uuid4 for portability); tests are
+# grandfathered until the fixture uuid4→uuid7 sweep (separate mechanical PR).
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"uuid.uuid4".msg = "uuid7 is the w2v id standard — use uuid.uuid7() (stdlib, py3.14)."
+# P3 WP-LLM: the orchestrator's WMClient dispatches a run's TENANT `llm` slot
+# in-process. Constructing the raw w2v_common client would silently send that
+# tenant's calls to worker_management (our model, our bill) instead.
+"w2v_common.clients.WMClient".msg = "Import WMClient from src.services.llm (per-run llm slot dispatch)."
+"w2v_common.clients.wm_client.WMClient".msg = "Import WMClient from src.services.llm (per-run llm slot dispatch)."
+
+[tool.ruff.lint.per-file-ignores]
+"src/database/migrations/*" = ["I001", "ANN", "TID251"]
+"tests/**/*.py" = ["S101", "S105", "S106", "S108", "ANN", "PTH", "ASYNC230", "ASYNC240", "SIM117", "TID251"]
+
+# ── ANN401 ratchet (see [tool.ruff.lint].ignore note) ─────────────────────────
+# These files still carry `Any` in a function signature. Do NOT add to this list.
+# When you type a file's client/stage seam with pydantic models, DELETE its line
+# here — that re-enables ANN401 for the file and locks the win in. Target: empty.
+"scripts/e2e_validate.py" = ["ANN401"]  # evaluates arbitrary JSON stage output
+"src/api/routes/artifact_proxy.py" = ["ANN401"]  # duck-typed miniopy StreamedObject facade (reached via getattr) — typing it forces import churn
+"src/api/schemas/storyboard.py" = ["ANN401"]
+"src/cache/redis_client.py" = ["ANN401"]
+"src/database/repositories/storyboard_repository.py" = ["ANN401"]
+"src/observability/tracing.py" = ["ANN401"]
+"src/services/license_status.py" = ["ANN401"]
+"src/services/run_dispatcher.py" = ["ANN401"]
+"src/services/runs/run_setup.py" = ["ANN401"]
+"src/services/stages/generic/ai_video_gen.py" = ["ANN401"]
+"src/services/stages/generic/source_ingest.py" = ["ANN401"]
+"src/services/stages/shared/provenance.py" = ["ANN401"]
+"src/services/stages/shared/script_doctor.py" = ["ANN401"]
+"src/services/stages/shot_sound.py" = ["ANN401"]
+"src/services/storyboard/assist.py" = ["ANN401"]
+
+[tool.ty.environment]
+python-version = "3.14"
+
+[tool.ty.rules]
+unresolved-import = "error"
+unresolved-reference = "error"
+unresolved-attribute = "error"
+possibly-unresolved-reference = "error"
+possibly-missing-attribute = "error"
+missing-argument = "error"
+invalid-argument-type = "error"
+invalid-return-type = "error"
+
+[tool.bandit]
+targets = ["src"]
+skips = ["B311"]

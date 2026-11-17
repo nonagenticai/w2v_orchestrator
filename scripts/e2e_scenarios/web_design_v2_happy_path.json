@@ -1,0 +1,51 @@
+{
+  "_doc": "Post-promote guard for the web_design_v2 blueprint (brand_extract → design → verify → assemble). This is the ONLY scenario exercising the computed-assembly, interactive, verified web-design path: the `design` stage calls html_render_service in mode=assembly, whose internal render + JS-console + axe-a11y verify/refine lane mark_fails a broken design — which raises the design stage and prevents the run from completing. So a terminal `completed` here PROVES a verified interactive design was produced end-to-end; `verify` re-asserts the report is not failing (defense-in-depth) and `assemble` emits the live artifact URLs. Brand is supplied INLINE (project `brand` block) so the nightly guard has no hard dependency on analysis_service's brand-from-url fetch (brand_extract is best-effort and never fails the run). No `embeds`: the three.js seam needs a real fetchable artifact URL from the future embed service, so it is validated separately once that exists — not in this guard. brief.description is REQUIRED (the design stage raises StageError without it). pause_after_stages:[] runs straight to `completed` through design→verify→assemble. expect_stage_assertions on `assemble` prove the artifact surfaced (live_html_url + redesign_job_id) and that verification ran (verification_status) — a green terminal alone would not catch a regression that completes without a verified, fetchable design. deadline/timeout in the workflow matrix are widened for the design stage's LLM plan + Chromium render + up to 2 refine passes (~3000s worst case).",
+  "project": {
+    "type": "web_design_v2",
+    "title": "web_design_v2 — assembled interactive landing page",
+    "brief": {
+      "description": "A clean single-page marketing landing page for a developer-tools startup, with a hero, a feature grid, social-proof logos, pricing, an FAQ, and a single primary call-to-action.",
+      "page_type": "landing",
+      "audience": "engineering leads evaluating a developer tool",
+      "interactivity": "interactive",
+      "goals": ["communicate the product value", "drive a single primary CTA"]
+    },
+    "brand": {
+      "name": "Nonagentic",
+      "primary_color": "#1F6FEB",
+      "font_family": "Inter"
+    },
+    "deliverables": [
+      {
+        "name": "Design",
+        "format": "16x9"
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+  "expect_terminal_status": ["completed"],
+  "_checks_doc": "STRENGTHENED 2026-09-05. Two assertions here could not fail. (1) `nonempty verification_status` PASSES on the literal string \"failed\" — nonempty only tests that the resolved value is a non-blank str (e2e_validate.py::_eval_check). The real success literal is \"passed\": web_design_v2/verify.py raises StageError unless the design's status is \"passed\" (or the absent \"skipped\"/None case, which itself raises while `web_design_require_verification` is ON — the default), and assemble.py:56 sets verification_status = verify.get(\"status\") or design.get(\"verification_status\"), where VerifyOutput.status is that same literal. So `equals \"passed\"` is what this scenario always meant, and it adds no NEW red risk under the default setting: any non-passed status already fails the verify stage and therefore the run. (2) `nonempty live_html_url` is near-vacuous by construction — assemble.py:54 falls back to f\"/api/redesign/jobs/{job_id}/html\", so it is non-empty whenever a job id exists (which the line above it already requires). It is kept (cheap) but no longer carries the spec. The new load-bearing check is the rendered artifact: `visuals[].image_url`, collected at design.py:165 (_collect_visuals) from the `generate_screenshots=True, screenshot_viewports=[\"desktop\"]` submit — a Chromium screenshot OF the assembled page. RedesignVisual.image_url is a required str (website_review/redesign.py:88) and website_review_variants_happy_path asserts this same path live. The `verify` stage assertion is new too: it names the gate stage explicitly so a verify that silently stops running is a NAMED failure rather than a missing one.",
+  "expect_stage_assertions": [
+    {
+      "stage": "verify",
+      "status": "completed",
+      "checks": [
+        { "type": "equals", "path": "status", "value": "passed" }
+      ]
+    },
+    {
+      "stage": "assemble",
+      "status": "completed",
+      "checks": [
+        { "type": "nonempty", "path": "live_html_url" },
+        { "type": "nonempty", "path": "redesign_job_id" },
+        { "type": "equals", "path": "verification_status", "value": "passed" },
+        { "type": "nonempty", "path": "visuals[].image_url" },
+        { "type": "distinct_count_gte", "path": "visuals[].image_url", "value": 1 }
+      ]
+    }
+  ]
+}

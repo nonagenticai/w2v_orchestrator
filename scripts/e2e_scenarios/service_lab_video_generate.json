@@ -1,0 +1,31 @@
+{
+  "_doc": "Studio service bench, video slot: POST /api/services/video with a license token drives the full path — AuthMiddleware -> license gate -> slot resolution (byo_mode honoured) -> AIContentGenerationClient list/submit/poll -> MinIO store -> service_runs row. Added 2026-11-02 because it was the one slot with no live evidence at all. `seconds: 1` keeps the render at its floor; the route's own budget is 300 s (routes/service_lab.py::_TIMEOUT_SECONDS), so the probe asks for 360.",
+  "service_probe": {
+    "service": "orchestrator",
+    "method": "POST",
+    "path": "/api/services/video",
+    "body": {
+      "prompt": "a single lit candle on a dark table, slow push-in",
+      "seconds": 1
+    },
+    "auth": "license",
+    "timeout_seconds": 360,
+    "expect_status_code": 200,
+    "expect_keys": ["id", "slot", "status", "created_at", "media_url", "media_content_type"],
+    "checks": [
+      { "type": "equals", "path": "slot", "value": "video" },
+      { "type": "equals", "path": "status", "value": "succeeded" },
+      { "type": "equals", "path": "output_kind", "value": "video" },
+      { "type": "nonempty", "path": "media_url" },
+      {
+        "type": "in",
+        "path": "media_content_type",
+        "values": ["video/mp4", "video/webm"]
+      },
+      { "type": "in", "path": "provider.source", "values": ["deployment", "tenant"] }
+    ]
+  },
+  "_expect_doc": "200 is the honest expectation on this deployment: ACG registers the `stub` renderer (VIDEO_PROVIDER=stub), which returns a placeholder clip — the bench's own page labels it `result-stub`, so a stub answer is a real answer here, not a silent fake. If this scenario ever returns 409 `provider_unavailable`, that means the deployment has NO registered video provider at all: report it as a configuration finding and re-point this scenario at the 409 shape — do not paper over it with a permissive assertion.",
+  "_wire_doc": "Field names are snake_case on the wire (`created_at`, `media_url`, `output_kind`): `ServiceRunView` sets `model_config = _camel`, but that ConfigDict has no alias_generator, so the name is a misnomer. Same trap the image scenario documents at length.",
+  "_cost_doc": "Kept `nightly: false` + `rotation: false`: a video render is the most expensive bench call and this is proof of a shipped feature, not a per-night regression."
+}

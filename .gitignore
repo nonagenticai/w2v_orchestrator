@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.python-version
+
+# Node
+node_modules/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Data (runtime)
+data/
+output/
+recording-report/
+
+# OS
+.DS_Store
+Thumbs.db
+test-results/
+.claude/
+
+# Developer-local CI failure snapshots written by ad-hoc tooling.
+0*_recent_push_failure.txt
+.worktrees/
+
+# Logs written by the shared pre-commit/pre-push hooks on every run. They were
+# TRACKED here (a .gitignore entry alone does not stop a tracked file), so every
+# commit dirtied the tree with one. The hook itself already ignores these paths
+# when it checks for uncommitted changes (gitops pre-push:166-168).
+.local-ci-commit.txt
+.local-ci-push.txt

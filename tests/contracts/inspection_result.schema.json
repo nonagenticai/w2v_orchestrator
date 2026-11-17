@@ -1,0 +1,535 @@
+{
+  "$defs": {
+    "AccessibilityIssueInfo": {
+      "description": "An accessibility issue on a screen.",
+      "properties": {
+        "element_tag": {
+          "default": "",
+          "description": "Element tag name",
+          "maxLength": 512,
+          "title": "Element Tag",
+          "type": "string"
+        },
+        "element_text": {
+          "default": "",
+          "description": "Element text content",
+          "maxLength": 4096,
+          "title": "Element Text",
+          "type": "string"
+        },
+        "message": {
+          "default": "",
+          "description": "Issue description",
+          "maxLength": 4096,
+          "title": "Message",
+          "type": "string"
+        },
+        "rule": {
+          "description": "Accessibility rule violated",
+          "maxLength": 512,
+          "title": "Rule",
+          "type": "string"
+        },
+        "severity": {
+          "description": "Issue severity level",
+          "maxLength": 512,
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule",
+        "severity"
+      ],
+      "title": "AccessibilityIssueInfo",
+      "type": "object"
+    },
+    "ContentSectionInfo": {
+      "description": "A content section on a screen.",
+      "properties": {
+        "element_count": {
+          "default": 0,
+          "description": "Number of elements in section",
+          "minimum": 0,
+          "title": "Element Count",
+          "type": "integer"
+        },
+        "has_interactive": {
+          "default": false,
+          "description": "Whether section has interactive elements",
+          "title": "Has Interactive",
+          "type": "boolean"
+        },
+        "heading": {
+          "default": "",
+          "description": "Section heading",
+          "maxLength": 512,
+          "title": "Heading",
+          "type": "string"
+        }
+      },
+      "title": "ContentSectionInfo",
+      "type": "object"
+    },
+    "InteractiveElementInfo": {
+      "description": "Detail about an interactive element.",
+      "properties": {
+        "clickable": {
+          "default": false,
+          "description": "Whether element is clickable",
+          "title": "Clickable",
+          "type": "boolean"
+        },
+        "content_desc": {
+          "default": "",
+          "description": "Content description",
+          "maxLength": 512,
+          "title": "Content Desc",
+          "type": "string"
+        },
+        "resource_id": {
+          "default": "",
+          "description": "Resource identifier",
+          "maxLength": 512,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "tag": {
+          "description": "Element tag name",
+          "maxLength": 512,
+          "title": "Tag",
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "description": "Element text",
+          "maxLength": 4096,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tag"
+      ],
+      "title": "InteractiveElementInfo",
+      "type": "object"
+    },
+    "NavigationEdge": {
+      "description": "A navigation edge in the screen graph.",
+      "properties": {
+        "action": {
+          "default": "tap",
+          "description": "Navigation action",
+          "maxLength": 512,
+          "title": "Action",
+          "type": "string"
+        },
+        "element_label": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Label of element triggering navigation",
+          "title": "Element Label"
+        },
+        "from_screen": {
+          "description": "Source screen ID",
+          "maxLength": 256,
+          "title": "From Screen",
+          "type": "string"
+        },
+        "to_screen": {
+          "description": "Target screen ID",
+          "maxLength": 256,
+          "title": "To Screen",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_screen",
+        "to_screen"
+      ],
+      "title": "NavigationEdge",
+      "type": "object"
+    },
+    "ScreenInfo": {
+      "description": "Information about a discovered screen.",
+      "properties": {
+        "accessibility_ids": {
+          "description": "Accessibility identifiers",
+          "items": {
+            "type": "string"
+          },
+          "title": "Accessibility Ids",
+          "type": "array"
+        },
+        "accessibility_issues": {
+          "description": "Accessibility issues",
+          "items": {
+            "$ref": "#/$defs/AccessibilityIssueInfo"
+          },
+          "title": "Accessibility Issues",
+          "type": "array"
+        },
+        "accessibility_score": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Accessibility score (null = not measured)",
+          "title": "Accessibility Score"
+        },
+        "activity_name": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Activity or view controller name",
+          "title": "Activity Name"
+        },
+        "content_sections": {
+          "description": "Content sections",
+          "items": {
+            "$ref": "#/$defs/ContentSectionInfo"
+          },
+          "title": "Content Sections",
+          "type": "array"
+        },
+        "has_forms": {
+          "default": false,
+          "description": "Whether screen contains forms",
+          "title": "Has Forms",
+          "type": "boolean"
+        },
+        "has_media": {
+          "default": false,
+          "description": "Whether screen contains media",
+          "title": "Has Media",
+          "type": "boolean"
+        },
+        "headings": {
+          "description": "Detected headings",
+          "items": {
+            "type": "string"
+          },
+          "title": "Headings",
+          "type": "array"
+        },
+        "interactive_elements": {
+          "default": 0,
+          "description": "Number of interactive elements",
+          "minimum": 0,
+          "title": "Interactive Elements",
+          "type": "integer"
+        },
+        "interactive_elements_detail": {
+          "description": "Interactive element details",
+          "items": {
+            "$ref": "#/$defs/InteractiveElementInfo"
+          },
+          "title": "Interactive Elements Detail",
+          "type": "array"
+        },
+        "screen_id": {
+          "description": "Unique screen identifier",
+          "maxLength": 256,
+          "title": "Screen Id",
+          "type": "string"
+        },
+        "screen_type": {
+          "description": "Classified screen type",
+          "maxLength": 256,
+          "title": "Screen Type",
+          "type": "string"
+        },
+        "screenshot_path": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Path to screenshot",
+          "title": "Screenshot Path"
+        },
+        "screenshot_status": {
+          "default": "unknown",
+          "description": "Explicit screenshot capture outcome. Only 'captured' asserts an artifact exists; the default 'unknown' means unmeasured, NOT success.",
+          "enum": [
+            "captured",
+            "failed",
+            "not_requested",
+            "unknown"
+          ],
+          "title": "Screenshot Status",
+          "type": "string"
+        },
+        "text_content": {
+          "anyOf": [
+            {
+              "maxLength": 8192,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Extracted text content",
+          "title": "Text Content"
+        },
+        "ui_components": {
+          "description": "Detected UI components",
+          "items": {
+            "$ref": "#/$defs/UIComponentInfo"
+          },
+          "title": "Ui Components",
+          "type": "array"
+        }
+      },
+      "required": [
+        "screen_id",
+        "screen_type"
+      ],
+      "title": "ScreenInfo",
+      "type": "object"
+    },
+    "UIComponentInfo": {
+      "description": "A detected UI component.",
+      "properties": {
+        "component_type": {
+          "description": "Component type",
+          "maxLength": 512,
+          "title": "Component Type",
+          "type": "string"
+        },
+        "confidence": {
+          "default": 1.0,
+          "description": "Detection confidence",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "resource_id": {
+          "default": "",
+          "description": "Resource identifier",
+          "maxLength": 512,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "tag": {
+          "default": "",
+          "description": "Component tag",
+          "maxLength": 512,
+          "title": "Tag",
+          "type": "string"
+        }
+      },
+      "required": [
+        "component_type"
+      ],
+      "title": "UIComponentInfo",
+      "type": "object"
+    }
+  },
+  "description": "Full inspection result.",
+  "properties": {
+    "app_path": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "App binary path",
+      "title": "App Path"
+    },
+    "artifacts_degraded": {
+      "default": false,
+      "description": "True when this result is complete in shape but short on artifacts: a screen reports a failed capture, or screens were discovered and NONE carries a screenshot. DERIVED -- a consumer can gate on this instead of inferring success from a well-formed but empty structure.",
+      "title": "Artifacts Degraded",
+      "type": "boolean"
+    },
+    "design_system_summary": {
+      "anyOf": [
+        {
+          "maxLength": 8192,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Design system summary",
+      "title": "Design System Summary"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Error message if failed",
+      "title": "Error"
+    },
+    "estimated_purpose": {
+      "anyOf": [
+        {
+          "maxLength": 8192,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Inferred app purpose",
+      "title": "Estimated Purpose"
+    },
+    "inspection_time_seconds": {
+      "anyOf": [
+        {
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Total inspection duration",
+      "title": "Inspection Time Seconds"
+    },
+    "job_id": {
+      "description": "Unique job identifier",
+      "maxLength": 256,
+      "title": "Job Id",
+      "type": "string"
+    },
+    "navigation_graph": {
+      "description": "Navigation graph edges",
+      "items": {
+        "$ref": "#/$defs/NavigationEdge"
+      },
+      "title": "Navigation Graph",
+      "type": "array"
+    },
+    "overall_accessibility_score": {
+      "anyOf": [
+        {
+          "maximum": 100,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Overall accessibility score (null = nothing was measured)",
+      "title": "Overall Accessibility Score"
+    },
+    "platform": {
+      "anyOf": [
+        {
+          "maxLength": 256,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Target platform",
+      "title": "Platform"
+    },
+    "recording_path": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Path to session recording",
+      "title": "Recording Path"
+    },
+    "screens": {
+      "description": "Discovered screens",
+      "items": {
+        "$ref": "#/$defs/ScreenInfo"
+      },
+      "title": "Screens",
+      "type": "array"
+    },
+    "screens_discovered": {
+      "default": 0,
+      "description": "Number of screens discovered",
+      "minimum": 0,
+      "title": "Screens Discovered",
+      "type": "integer"
+    },
+    "screenshots_captured": {
+      "default": 0,
+      "description": "Screens carrying a screenshot reference. DERIVED from screens -- a producer cannot overstate it.",
+      "minimum": 0,
+      "title": "Screenshots Captured",
+      "type": "integer"
+    },
+    "status": {
+      "description": "Job status",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "awaiting_selection"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "job_id",
+    "status"
+  ],
+  "title": "InspectionResultResponse",
+  "type": "object"
+}

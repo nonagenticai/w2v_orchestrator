@@ -1,0 +1,20 @@
+{
+  "title": "Linear vs Asana — pick a winner",
+  "type": "app_review",
+  "brief": {
+    "audience": "engineering managers",
+    "target_url": "https://stub.local/linear-product-page",
+    "competitor_urls": ["https://stub.local/asana-product-page"],
+    "duration_seconds": 120,
+    "review_lens": "speed of issue triage"
+  },
+  "voice": {"descriptor": "honest, founder-experienced, fast"},
+  "deliverables": [
+    {
+      "name": "Review video 16x9",
+      "format": "16x9",
+      "captions_mode": "burned_in",
+      "target_duration_seconds": 120
+    }
+  ]
+}

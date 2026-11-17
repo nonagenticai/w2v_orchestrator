@@ -1,0 +1,22 @@
+url: https://spa.example.com
+site_name: "SPA Demo"
+
+crawl:
+  max_depth: 2
+  max_pages: 15
+  javascript_enabled: true
+
+recording:
+  slow_mo_ms: 400
+  color_scheme: dark
+
+video:
+  output_path: output/spa-demo.mp4
+  crf: 18
+  title_card_duration_s: 6
+
+theme:
+  name: dark
+  primary_color: "#10b981"
+  background_color: "#111827"
+  text_color: "#f9fafb"

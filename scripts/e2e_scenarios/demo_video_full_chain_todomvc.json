@@ -1,0 +1,153 @@
+{
+  "_doc": "MANUAL full-chain demo_video validation against a REAL interactive app (TodoMVC \u2014 the canonical Playwright demo SPA: add/complete/delete todos = real type/click interactions, fast & deterministic). example.com is a degenerate target (near-empty DOM \u2192 the generated BDD suite hangs on missing elements \u2192 FTR _run_tests 600s timeout); TodoMVC generates working, fast-completing scenarios so the record->compile->MP4 tail actually produces a video with real interactions. NO pause: runs gen -> narrate \u2225 record -> compile -> growth_bundle. Asserts gen lines, record interaction clips w/ video_url, narration audio clips, and a non-empty compiled MP4 artifact_url. \u26a0\ufe0f target_duration_seconds LOWERED 60 -> 30 on 2026-08-23, measured not guessed. On run 01a03011 this fixture ordered 60s from TodoMVC with two focus_areas: the derivation correctly asked bdd for ceil(60/4.0)=15 scenarios, bdd generated 5, capture returned all 5 (no shortfall), and the measured yield was 5.45s/beat \u2014 ABOVE the 4.0s assumed. 5 x 5.45 = 27.26s, so reconcile_timeline hard-failed at 45.4% of target, correctly. max_scenarios_per_feature is a CEILING, not a quota: a trivial app yields what it affords whatever ceiling it is given. Asking 60s of TodoMVC is unsatisfiable BY CONSTRUCTION \u2014 the same shape this fixture was supposed to have stopped demonstrating. 30s sits just above the 27.26s the app actually affords. ⚠️ RAISED 30 -> 44 on 2026-09-11 — ARITHMETIC, not tuning. bdd guarantees a fixed recording dwell per scenario (HERO_DWELL_MS, on the wire as narration_script.parts[].expected_recording_seconds), measured at 22.00s on live run 01a0b3f1. An N-scenario demo therefore has a HARD floor of N x 22.00s, and this fixture's own expect_stage_assertions demand distinct_count_gte(lines[].id) >= 2 — so its floor is 2 x 22.00 = 44.00s and a 30s order was UNREACHABLE BY CONSTRUCTION: the run delivered 47.045s (+56.8%), then structural relief spawned a child that delivered 19.95s (-33.5%). Neither pass is inside duration_conformance's +/-10% band. 44s makes the order feasible (44.00s floor == 44.00s ordered; the 47.045s actually delivered is +6.9%, inside the band 39.60-48.40s). This is a FIXTURE correction — the order was unrealistic for the scenario count the fixture itself requires.",
+  "project": {
+    "type": "demo_video",
+    "title": "e2e-demo-video-full-chain-todomvc",
+    "brief": {
+      "target_url": "https://demo.playwright.dev/todomvc",
+      "focus_areas": [
+        "add a new todo item",
+        "mark a todo as completed"
+      ]
+    },
+    "voice": {
+      "descriptor": "clear, instructional, calm",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "deliverables": [
+      {
+        "name": "Demo video 16x9",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 44
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+  "expect_terminal_status": [
+    "completed"
+  ],
+  "expect_no_degradation_codes": ["duration_out_of_tolerance", "duration_not_ordered"],
+  "expect_stage_assertions": [
+    {
+      "_checks_doc": "lines[].id floor RAISED 1 -> 2 on 2026-09-05. A 1-item floor cannot tell a real spine from a degenerate one-beat film, which is the same class of hole that let site_capture return `completed` with zero screens. 2 is MEASURED, not guessed: gen.py::_scenarios_for_target's own docstring records E2E run 01a03011 — THIS scenario, same TodoMVC target, same two focus_areas — generating FIVE scenarios, so the floor has 2.5x headroom. demo_video_calibration already uses 2. `features_generated` (DemoVideoGenOutput, gen.py:365) is added alongside: it is set from result.features_generated at gen.py:502 on the bdd path and is 0 only in authored mode (gen.py:440), which this scenario is not.",
+      "stage": "demo_video_gen",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "lines[].id",
+          "value": 2
+        },
+        {
+          "type": "numeric_gte",
+          "path": "features_generated",
+          "value": 1
+        },
+        {
+          "type": "nonempty",
+          "path": "lines[].text"
+        }
+      ]
+    },
+    {
+      "stage": "demo_video_record",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "clips[].line_id",
+          "value": 1
+        },
+        {
+          "type": "nonempty",
+          "path": "clips[].video_url"
+        }
+      ]
+    },
+    {
+      "stage": "demo_video_narrate",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "clips[].artifact_url"
+        }
+      ]
+    },
+    {
+      "stage": "demo_video_compile",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "artifact_url"
+        }
+      ]
+    }
+  ],
+  "_pixel_doc": "bounds are FULL-RANGE [0,255], not broadcast-legal [16,235]: this is a web/computer screen recording (TodoMVC), so real footage legitimately contains pure-black text/letterbox (YMIN=0) and pure-white background (YMAX=255) \u2014 a broadcast-legal floor of 16 hard-fails every real master (verified: live compile YMIN=0, YAVG 235-255). Legal luma is unachievable pre-encode anyway (libx264 ringing). The real non-degenerate-video signal here is yavg_spread_max (no wild brightness swings) + min_frames (a substantial video, not a 1-frame stub); the upstream demo_video_record blank-gate (#654 sharpness) already rejects blank clips before compile.\n\n⚠️ STAGE RE-BINDING 2026-09-11: every pixel check in this file used to be bound to `demo_video_compile`, so NOTHING in it ever probed the artifact this scenario actually DELIVERS. `demo_video_encode_master` is the delivered stage — it sits downstream of compile (src/services/blueprints/demo_video.py, depends_on=(\"demo_video_footage_critique\",)) and runs the mastering critic/advisor loop, so the master's bytes are NOT the compile draft's bytes and a compile-bound assertion cannot refute a mastering regression. The four media ACCEPTANCE checks (artifact_reachable / audio_present / resolution / stream_durations) and `declared_vs_measured` are therefore bound to `demo_video_encode_master`, structurally copied from the sibling demo_video_full_chain.json with ITS floors — min_bytes 4096, >=1280x720 16:9, video>=10s, audio>=5s — deliberately NOT new tuning numbers invented for this fixture. `signalstats_delta` and `min_frames` STAY on `demo_video_compile`: they are legitimately pre-encode probes of the draft's pixels (and their full-range bounds above were measured on a compile output, not on a master). `duration_within_tolerance` is present and DISARMED (`\"enabled\": false`) carrying `ordered_seconds: 44` to match this fixture's own corrected order; arming it is out of scope here — no type has a measured tolerance band yet.",
+  "expect_pixel_checks": [
+    {
+      "stage": "demo_video_compile",
+      "type": "signalstats_delta",
+      "path": "artifact_url",
+      "bounds": [
+        0,
+        255
+      ],
+      "yavg_spread_max": 40
+    },
+    {
+      "stage": "demo_video_compile",
+      "type": "min_frames",
+      "path": "artifact_url",
+      "min_frames": 10
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "type": "artifact_reachable",
+      "path": "artifact_url",
+      "min_bytes": 4096
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "type": "audio_present",
+      "path": "artifact_url",
+      "true_peak_ceiling_dbtp": 0.0
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "type": "resolution",
+      "path": "artifact_url",
+      "min_width": 1280,
+      "min_height": 720,
+      "aspect": "16x9"
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "type": "stream_durations",
+      "path": "artifact_url",
+      "require_video": true,
+      "require_audio": true,
+      "min_video_seconds": 22,
+      "min_audio_seconds": 22, "max_stream_skew_seconds": 0.5
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "type": "duration_within_tolerance",
+      "path": "artifact_url",
+      "enabled": false,
+      "ordered_seconds": 44
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "type": "declared_vs_measured",
+      "path": "artifact_url",
+      "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+    }
+  ]
+}

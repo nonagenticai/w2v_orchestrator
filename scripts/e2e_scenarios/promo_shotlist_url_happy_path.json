@@ -1,0 +1,38 @@
+{
+  "_doc": "Live recorder coverage for the authored shotlist path (shotlist arc item b, the url-shot complement to promo_shotlist_happy_path's slide-only item c). A promo run whose brief.shotlist carries two `url` shots makes the `site_capture` stage actually drive the video_production_service recorder against a live URL — the one path the slide-only scenario deliberately skips. site_capture is a no-dep opt-in leaf, so pause_after_stages:[site_capture] lets ONLY the recorder fire (plus the concurrent no-dep promo_analyze hop) and pauses before promo_script/promo_narrate/promo_render — no TTS, no slide render, no compile. Uses https://example.com (IANA-reserved demo domain, stable fast TLS, same as website_review/app_review) so the capture doesn't depend on a brittle resolver. Stage assertions prove the recorder produced one screen per authored url shot (>=2 distinct screens[].id, deterministically shot-000..shot-001 == each shot's line_id), each with a real image_url, and that page text was extracted — a green `paused` alone would not catch a regression where authored url shots silently failed to capture. NOTE: this drives the live recorder + a headless browser, so it is heavier and flakier than the slide-only guard — kept as a separate matrix entry with a generous deadline.\n\nFLOOR PINNED, NOT RE-SIZED (recorded 2026-09-03). `site_capture screens[].id >= 2` looks fragile blueprint-wide -- MEASURED over a 90-day window of completed `stage_outputs` on promo_v1 the distinct screen count is min 0 (n=58) -- but that minimum comes from promo runs that author NO url shots at all and therefore capture nothing, not from this scenario under-delivering. Here the count is a CONTRACT: the brief authors exactly 2 `kind: url` shots and site_capture captures one screen per authored url shot, so 2 is pinned by the input. Lowering it would stop the assertion proving the second (scrolled) capture happened at all, which is the url-shot coverage this scenario exists for. tests/test_e2e_scenario_contracts.py now derives the pin from the count of `kind: url` entries in `project.brief.shotlist` and requires this floor to EQUAL it.",
+  "project": {
+    "type": "promo",
+    "title": "e2e-promo-shotlist-url",
+    "brief": {
+      "angle": "growth",
+      "audience": "B2B SaaS founders",
+      "target_duration_seconds": 20,
+      "shotlist": [
+        {"kind": "url", "url": "https://example.com", "narration": "This is the live landing page.", "directives": {"viewport": "desktop", "hold_ms": 1500}},
+        {"kind": "url", "url": "https://example.com", "narration": "And here it is scrolled to the foot.", "directives": {"viewport": "desktop", "hold_ms": 1500, "scroll_to": "bottom"}}
+      ]
+    },
+    "brand": {"font": "Inter"},
+    "voice": {"descriptor": "confident, crisp, founder-to-founder", "model_preference": "qwen3-coder-30b"},
+    "theme": {"background": "#0B0E14", "accent": "#1F6FEB"},
+    "deliverables": [
+      {"name": "16x9 hero", "format": "16x9", "captions_mode": "none", "target_duration_seconds": 20}
+    ]
+  },
+  "run": {
+    "pause_after_stages": ["site_capture"],
+    "config_overrides": {}
+  },
+  "expect_terminal_status": ["paused"],
+  "expect_stage_assertions": [
+    {
+      "stage": "site_capture",
+      "status": "completed",
+      "checks": [
+        {"type": "distinct_count_gte", "path": "screens[].id", "value": 2},
+        {"type": "nonempty", "path": "screens[].image_url"},
+        {"type": "nonempty", "path": "page_text"}
+      ]
+    }
+  ]
+}

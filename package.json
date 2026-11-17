@@ -1,0 +1,11 @@
+{
+  "license": "Apache-2.0",
+  "name": "web-to-video",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript support for web_to_video Playwright script generation",
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "typescript": "^5.5.0"
+  }
+}

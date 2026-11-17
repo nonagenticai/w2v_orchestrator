@@ -1,0 +1,121 @@
+{
+  "_doc": "PROOF scenario (dispatch-only, paid; launch by hand via scripts/e2e_proof_launch.sh — it IS listed in matrix.json, with `nightly: false`, and is never scheduled). Exists because proof run 01a10d5d (showcase_happy_path, corporate_uplift bed by music_supervisor default) could NOT prove the music bed plays to the END of the film: its VO spoke until 29.23s of a 29.25s master, so the last ~20ms is the only VO-free window and the bed tail is masked by narration everywhere else. This scenario is showcase_happy_path's generated-mode brief (same target_url + focus_areas, same 30s deliverable order, so the same measured footage yield) with TWO run.config_overrides and nothing else changed:\n\n(1) `sound_effects: {enabled: true, music: \"jazz_lounge\", ambient: false}` — an AUTHORED music id wins outright over music_supervisor's pick (sound_design.resolve_audio_bed: an explicit id is honoured as-is), so the bed is jazz_lounge rather than the corporate_uplift default; no other scenario authors jazz_lounge. `ambient: false` (explicit False = no ambient, three-state contract) keeps room-tone/office-hum out of the tail so the only programme in the VO-free window is the music bed. jazz_lounge is 58.032s in sound_catalog.BUILTIN_CATALOG, longer than the ~36s film, so the tail measures the real track, not a loop seam.\n\n(2) `title_card: {enabled: true, intro: false, outro: true, duration_seconds: 6}` — the shared compile tail (primitives/compile_stage.py CompileStageBase.handle -> build_title_card_shots + splice_title_cards) APPENDS a 6s animated outro card AFTER every narrated shot, and demo_video_compile does not override `title_cards_enabled`. The audio bed is built from the POST-splice shot list (resolve_audio_bed sizes against shots 'post title-card + ken-burns'), so the bed must span the card while the VO cannot: the last ~6s of the master is VO-free BY CONSTRUCTION, not by hoping gen writes fewer words. That is deliberately the lever rather than fewer words / an underspoken last beat: generated-mode word counts are LLM-drawn and an underspoken hold is capped at freeze_pad_ceiling (1.5s default) and only exists when direction.timing is authored, which would also change the run's shape vs 01a10d5d. intro is OFF so VO starts where it did on 01a10d5d. `outro_title` is set explicitly because an empty title makes the card SKIP (title_cards._render returns None) and this project has no brand name.\n\nHOW TO READ THE PROOF (manual, after the run): take demo_video_encode_master.artifact_url, find VO end (narrate clips sum / compile shot_timeline) and measure the bed in [film_end-6s, film_end] — e.g. `ffmpeg -sseof -5 -i master.mp4 -af volumedetect -f null -` must NOT be digital silence (-inf / < -60 dBFS mean), and an astats per-second RMS over the last 6s should show the bed level, not a cliff before the end. If the outro card soft-failed (TITLE_CARD_DROPPED degradation on demo_video_compile) the run is NOT a proof of anything — check that first. Media floors follow the corpus rule (min stream = 0.5 x the 30s order); `duration_within_tolerance` is deliberately ABSENT because the delivered film is body (~30s) + 6s card and no band for that shape has been measured.",
+  "project": {
+    "type": "showcase",
+    "title": "e2e-showcase-bed-tail-jazz",
+    "brief": {
+      "target_url": "https://demo.playwright.dev/todomvc",
+      "focus_areas": [
+        "add a new todo item",
+        "mark a todo as completed"
+      ]
+    },
+    "deliverables": [
+      {
+        "name": "Showcase film",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 30
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {
+      "sound_effects": {
+        "enabled": true,
+        "music": "jazz_lounge",
+        "ambient": false
+      },
+      "title_card": {
+        "enabled": true,
+        "intro": false,
+        "outro": true,
+        "outro_title": "That's TodoMVC",
+        "duration_seconds": 6
+      }
+    }
+  },
+  "expect_terminal_status": [
+    "completed"
+  ],
+  "expect_pixel_checks": [
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "artifact_reachable",
+      "min_bytes": 4096
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "audio_present",
+      "true_peak_ceiling_dbtp": 0.0
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "resolution",
+      "min_width": 1280,
+      "min_height": 720,
+      "aspect": "16x9"
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "stream_durations",
+      "require_video": true,
+      "require_audio": true,
+      "min_video_seconds": 15,
+      "min_audio_seconds": 15,
+      "max_stream_skew_seconds": 0.5
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "declared_vs_measured"
+    }
+  ],
+  "expect_stage_assertions": [
+    {
+      "stage": "demo_video_gen",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "distinct_count_gte",
+          "path": "lines[].id",
+          "value": 2
+        },
+        {
+          "type": "nonempty",
+          "path": "lines[].text"
+        }
+      ]
+    },
+    {
+      "stage": "demo_video_narrate",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "clips[].artifact_url"
+        }
+      ]
+    },
+    {
+      "stage": "demo_video_compile",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "artifact_url"
+        },
+        {"_doc": "AUDIO PTS GAPS, armed 2026-10-06. `mastering.audio_pts_gap_count` is the compiler's own count of holes in the delivered audio stream's PTS (the +24ms-per-join AAC dropout class). ASSERTED == 0 via `numeric_abs_lte` value 0: abs(count) <= 0 is count == 0, and that evaluator FAILS on an absent, null or non-numeric value (an unmeasured count is not a count of zero) -- `equals` would str-compare and misread 0.0. The four entries after it are RECORDED only, never asserted: `mastering.true_peak_dbtp`, `mastering.master_loudness_correction_db` (null = no correction ran), and `loudness.silence_ratio` -- which lives on `loudness`, NOT `mastering`, and is null both when silencedetect printed nothing and when there was no silence, so it cannot carry an assertion.", "type": "numeric_abs_lte", "path": "mastering.audio_pts_gap_count", "value": 0},
+        {"type": "record", "path": "mastering.audio_pts_gap_count"},
+        {"type": "record", "path": "mastering.true_peak_dbtp"},
+        {"type": "record", "path": "mastering.master_loudness_correction_db"},
+        {"type": "record", "path": "loudness.silence_ratio"}
+      ]
+    }
+  ]
+}

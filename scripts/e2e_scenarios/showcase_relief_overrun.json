@@ -1,0 +1,99 @@
+{
+  "_doc": "PROOF scenario (dispatch-only, paid; launch by hand via scripts/e2e_proof_launch.sh — it IS listed in matrix.json with `nightly: false` + `rotation: false`, so it is never scheduled and an unlabelled dispatch skips it). ⛔ IT DOES NOT SPAWN A RELIEF CHILD, and an earlier version of this note predicted one. The relief decision it reaches is `STOP_UNDERFULL`, outcome `declined`, `spawned_child_run_id: null`.\n\nWHY NO CHILD — arithmetic, measured on run 01a10e26-ad6e-73db-9e58-8731f0f87731 (2026-10-06): the manifest carried 3 footage-pinned beats of 9.32 / 9.76 / 10.28s (29.36s = the 12s target + overrun_seconds 17.36), i.e. 9.79s measured per beat. A relief child must shrink, so its legal counts are 1 and 2. The +/-10% band of the 12s target is [10.80s, 13.20s]; 1 beat = 9.79s (< 10.80) and 2 beats = 19.57s (> 13.20). The band is EMPTY, so structural_relief_policy refuses to bill a render that must land outside it: verdict `STOP_UNDERFULL`, no child. That parent delivered 31.743s, above its own 29.36s footage plan, so the recorded sizing_basis is `footage_delivered_exceeds_plan` — the delivered-sized branch of #1063 did not decide either.\n\nWHAT THIS SCENARIO DOES EXERCISE: it gets a showcase_v1 run PAST the guard that stopped proof run 01a10d5d (showcase_happy_path), which carried NO direction.timing block, so reconcile_timeline raised StageSkippedError (_resolve_timing_config: 'no direction.timing block'), no timeline_manifest was written, and maybe_spawn_structural_relief_run returned at its `if not manifest: return None` guard (src/services/runs/structural_relief.py ~498) before any decision. Here a manifest IS written and a decision IS recorded — a refusal.\n\nWHO EMITS timeline_manifest: stage `reconcile_timeline` (ReconcileTimelineStage, src/services/stages/demo_video/reconcile_timeline.py), wired into BOTH blueprints/showcase.py and blueprints/demo_video.py. It is config-gated, not blueprint-gated: the manifest is built ONLY inside the relief loop, entered when `cfg.relief_mode == \"auto\"` AND the timeline is infeasible (infeasible_beats) or any beat is unsayable. The relief_failed path still emits one. So this scenario stays on showcase_v1 (same blueprint as 01a10d5d) and authors `direction.timing` with `relief.mode: auto`.\n\nWHY IT OVERRUNS: same TodoMVC brief as showcase_happy_path, whose footage is pinned at roughly 29-37s across 3 clips. `direction.timing.target_seconds: 12` sits far below that pinned floor, so the protected-floor test classifies `cant_converge` and relief is REQUESTED (structural_relief_requested: true). Requested is not spawned: decide_relief_shape then refuses on the empty band above.\n\nWHAT THE SPEC ASSERTS (parent only): reconcile_timeline wrote a manifest whose relief loop ran (loop_iterations >= 1), classified cant_converge (allow-list, so relief_failed / converged / progress read RED), and recorded an overrun; plus the compile artifact and the media floors (corpus rule, 0.5 x the 12s ORDER = 6s). ⛔ NO ASSERTION CHECKS THE RELIEF DECISION — not the verdict, not the refusal, not the absence of a child. A green run of this scenario therefore proves nothing about the relief gate; read it by hand: `select output from stage_outputs where run_id=<this run> and stage_name='structural_relief_decision'`, and confirm no child with `select id, status, structural_relief_pass from runs where parent_run_id=<this run> and structural_relief_pass is not null` (expect zero rows). duration_within_tolerance is deliberately ABSENT because overrunning the order is this scenario's premise.",
+  "project": {
+    "type": "showcase",
+    "title": "e2e-showcase-relief-overrun",
+    "brief": {
+      "target_url": "https://demo.playwright.dev/todomvc",
+      "focus_areas": [
+        "add a new todo item",
+        "mark a todo as completed"
+      ]
+    },
+    "deliverables": [
+      {
+        "name": "Showcase film",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 30
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {
+      "direction": {
+        "timing": {
+          "mode": "auto",
+          "target_seconds": 12,
+          "relief": {
+            "mode": "auto",
+            "iterations": 2,
+            "score_threshold": 3.0
+          }
+        }
+      }
+    }
+  },
+  "_targets_deliberately_decoupled": "DELIBERATE, 2026-10-05. `direction.timing.target_seconds` (12) is what reconcile_timeline budgets against and must sit BELOW the measured footage-pinned floor (~29-37s for this brief) so the timeline is cant_converge and relief actually decides. The deliverable's `target_duration_seconds` stays at 30 — identical to showcase_happy_path — so gen sizes the spine and the recorder yields the SAME footage as the measured sibling (lowering it would shrink the very footage the overrun premise depends on) and script_doctor (skipped here, no block) would steer a sane script. Making them equal either kills the overrun (30/30) or shrinks the input (12/12).",
+  "expect_terminal_status": [
+    "completed"
+  ],
+  "expect_pixel_checks": [
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "artifact_reachable",
+      "min_bytes": 4096
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "stream_durations",
+      "require_video": true,
+      "require_audio": true,
+      "min_video_seconds": 6,
+      "min_audio_seconds": 6,
+      "max_stream_skew_seconds": 0.5
+    }
+  ],
+  "expect_stage_assertions": [
+    {
+      "stage": "reconcile_timeline",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "numeric_gte",
+          "path": "timeline_manifest.run.loop_iterations",
+          "value": 1
+        },
+        {
+          "type": "in",
+          "path": "timeline_manifest.run.convergence_outcome",
+          "values": [
+            "cant_converge"
+          ]
+        },
+        {
+          "type": "present",
+          "path": "timeline_manifest.run.overrun_seconds"
+        }
+      ]
+    },
+    {
+      "stage": "demo_video_compile",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "artifact_url"
+        },
+        {"_doc": "AUDIO PTS GAPS, armed 2026-10-06. `mastering.audio_pts_gap_count` is the compiler's own count of holes in the delivered audio stream's PTS (the +24ms-per-join AAC dropout class). ASSERTED == 0 via `numeric_abs_lte` value 0: abs(count) <= 0 is count == 0, and that evaluator FAILS on an absent, null or non-numeric value (an unmeasured count is not a count of zero) -- `equals` would str-compare and misread 0.0. The four entries after it are RECORDED only, never asserted: `mastering.true_peak_dbtp`, `mastering.master_loudness_correction_db` (null = no correction ran), and `loudness.silence_ratio` -- which lives on `loudness`, NOT `mastering`, and is null both when silencedetect printed nothing and when there was no silence, so it cannot carry an assertion.", "type": "numeric_abs_lte", "path": "mastering.audio_pts_gap_count", "value": 0},
+        {"type": "record", "path": "mastering.audio_pts_gap_count"},
+        {"type": "record", "path": "mastering.true_peak_dbtp"},
+        {"type": "record", "path": "mastering.master_loudness_correction_db"},
+        {"type": "record", "path": "loudness.silence_ratio"}
+      ]
+    }
+  ]
+}

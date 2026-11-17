@@ -1,0 +1,47 @@
+{
+  "_doc": "Per-promote guard for the motion_graphics_gen seam — the deterministic branded motion-graphics video source (the code-driven, zero-cost sibling of ai_video_gen). A promo run with a motion_graphics config block makes motion_graphics_gen actually drive video_production_service POST /api/record/animation: it frame-steps the `pipeline_story` HTML template into a real MP4 per item. motion_graphics_gen depends only on promo_script, so pause_after_stages:[motion_graphics_gen] runs promo_analyze + promo_script + the live render, then pauses BEFORE the heavy tail (promo_narrate TTS + promo_render compile) — the same cheap-guard pattern promo-shotlist-url uses with site_capture. Two static items (l-001/l-002) prove the stage produced one clip per item (>=2 distinct clips[].id, each keyed to its line_id) with a real fetchable video_url republished to the artifact store — a green `paused` alone would not catch a regression where the renderer silently returned no clip or an unfetchable ACG-relative URL. duration_ms/fps/resolution are trimmed so the live render stays well inside the deadline (the FULL render→compile→MP4 path is covered by the other promo scenarios). The line_id→shot join is exercised by render, which this scenario deliberately pauses before.\n\nFLOOR PINNED, NOT RE-SIZED (recorded 2026-09-03). `clips[].id` / `clips[].line_id >= 2` were flagged as fragile because MEASURED over a 90-day window of completed `stage_outputs` the distinct count is min = max = 2 (n=4) -- floor exactly ON the observed minimum, with a sample too thin to size anything from honestly. n=4 is the reason to PIN rather than guess a number: the count here is NOT LLM-chosen at all, it is authored -- `run.config_overrides.motion_graphics.items` names exactly 2 items (l-001, l-002) and the deterministic template renderer emits one clip per item. min = max = 2 over 4 runs is that determinism showing, not a coincidence, and it is why the right answer was never 'lower it to 1'. tests/test_e2e_scenario_contracts.py now derives the pin from the authored `items` list and requires both floors to EQUAL it.",
+  "project": {
+    "type": "promo",
+    "title": "e2e-motion-graphics-gen",
+    "brief": {
+      "angle": "growth",
+      "audience": "B2B SaaS founders",
+      "target_duration_seconds": 20
+    },
+    "brand": {"font": "Inter"},
+    "voice": {"descriptor": "confident, crisp, founder-to-founder", "model_preference": "qwen3-coder-30b"},
+    "theme": {"background": "#0B0E14", "accent": "#1F6FEB"},
+    "deliverables": [
+      {"name": "16x9 hero", "format": "16x9", "captions_mode": "none", "target_duration_seconds": 20}
+    ]
+  },
+  "run": {
+    "pause_after_stages": ["motion_graphics_gen"],
+    "config_overrides": {
+      "motion_graphics": {
+        "template_id": "pipeline_story",
+        "fps": 24,
+        "width": 1280,
+        "height": 720,
+        "duration_ms": 2000,
+        "items": [
+          {"line_id": "l-001", "params": {"headline": "Ship faster"}},
+          {"line_id": "l-002", "params": {"headline": "On brand, every frame"}}
+        ]
+      }
+    }
+  },
+  "expect_terminal_status": ["paused"],
+  "expect_stage_assertions": [
+    {
+      "stage": "motion_graphics_gen",
+      "status": "completed",
+      "checks": [
+        {"type": "distinct_count_gte", "path": "clips[].id", "value": 2},
+        {"type": "distinct_count_gte", "path": "clips[].line_id", "value": 2},
+        {"type": "nonempty", "path": "clips[].video_url"},
+        {"type": "nonempty", "path": "clips[].template_id"}
+      ]
+    }
+  ]
+}

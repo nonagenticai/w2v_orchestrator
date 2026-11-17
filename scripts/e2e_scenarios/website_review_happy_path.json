@@ -1,0 +1,131 @@
+{
+  "_doc": "Full website_review blueprint run: critique → redesign → script → record → compile → growth_bundle. Exercises analysis_service's critique + redesign engines (the heaviest LLM + headless-browser path in the fleet), then the standard TTS/video-compile chain. The `run` body omits pause_after_stages, so the per-stage `default_pause_after=True` markers in the blueprint do NOT pause execution (the run engine reads pause_after_stages only from the request, not from the blueprint spec — they exist for the UI's pause-list seeding only). Uses example.com (IANA-reserved demo domain) as the analysis target — stable, fast TLS, deterministic small body — so the run doesn't depend on a brittle stub.local resolver. ASSERTIONS: as with app_review, `expect_terminal_status` alone was the whole contract, and a `completed` compile is compatible with an unwatchable master. The checks below prove the heaviest LLM path actually produced a verdict (`summary`), that the script has real narration time, and that the delivered file is not a stub. The 15s duration floor sits well below the 60s target on purpose: it catches an empty deliverable without asserting a pacing target nobody has measured recently.",
+  "project": {
+    "type": "website_review",
+    "title": "example.com — minimalism critique",
+    "brief": {
+      "audience": "frontend designers evaluating IA",
+      "target_url": "https://example.com",
+      "redesign_style": "modern, generous whitespace, single CTA",
+      "duration_seconds": 60
+    },
+    "voice": {
+      "descriptor": "design-critic, calm, specific",
+      "model_preference": "qwen3-coder-30b"
+    },
+    "brand": {
+      "font": "Inter"
+    },
+    "theme": {
+      "background": "#0B0E14",
+      "accent": "#1F6FEB"
+    },
+    "deliverables": [
+      {
+        "name": "Review video 16x9",
+        "format": "16x9",
+        "captions_mode": "burned_in",
+        "target_duration_seconds": 60
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {}
+  },
+    "_pixel_doc": "Media ACCEPTANCE probes on the delivered master (scripts/e2e_validate.py _MEDIA_CHECKS). Before these, this scenario proved a url was a non-blank string and nothing about the bytes behind it. `artifact_reachable` proves the object downloads and decodes; `audio_present` proves an audio stream exists AND is not digital silence (ffmpeg volumedetect mean/peak dBFS); `resolution` reads the ENCODED width/height, not the number the stage reports about itself; `stream_durations` measures the VIDEO and AUDIO stream durations SEPARATELY and never the container -- a container duration is the MAX over its streams, so it can never refute a truncated video track. Floors are the ones this scenario's existing green assertions already prove, never new tuning numbers.\n\n`duration_within_tolerance` is ARMED (2026-10-05) -- it compares the delivered stream length against `ordered_seconds` at the SAME +/-10% the pipeline's own duration_conformance uses. See the check's own `_band_measurement` and `_arming_doc` for the measurement and the reason.",
+    "expect_pixel_checks": [
+      {
+        "stage": "website_review_compile",
+        "path": "artifact_url",
+        "type": "artifact_reachable",
+        "min_bytes": 4096
+      },
+      {
+        "stage": "website_review_compile",
+        "path": "artifact_url",
+        "type": "audio_present",
+        "true_peak_ceiling_dbtp": 0.0
+      },
+      {
+        "stage": "website_review_compile",
+        "path": "artifact_url",
+        "type": "resolution",
+        "min_width": 1280,
+        "min_height": 720,
+        "aspect": "16x9"
+      },
+      {
+        "stage": "website_review_compile",
+        "path": "artifact_url",
+        "type": "stream_durations",
+        "require_audio": true,
+        "min_audio_seconds": 30,
+        "max_stream_skew_seconds": 0.5,
+        "require_video": true,
+        "min_video_seconds": 30
+      },
+      {
+        "stage": "website_review_compile",
+        "path": "artifact_url",
+        "type": "duration_within_tolerance",
+        "enabled": true,
+        "ordered_seconds": 60,
+        "tolerance_fraction": 0.1,
+        "_band_measurement": "MEASURED on website_review_v1 against THIS scenario's 60s order (numbers recorded in src/services/stages/website_review/script.py): 2026-09-15, three live 60s runs delivered 45.7s / 51.8s / 51.5s (-23.8% / -13.6% / -14.1%), all short; the first wave after the second short-side re-ask, n=7 60s runs, 4 inside +/-10% and 3 short (-30.3% / -15.3% / -10.1%). On all seven the script stage's MEASURED narration seconds matched the delivered master to within 0.3%, so the delivered length is the script draw and nothing else. +/-10% is the pipeline's own duration_conformance band and it separates the known-good runs from the known-short ones. NOT a claim that the type now always lands: no post-fix population exists yet.",
+        "_arming_doc": "ARMED 2026-10-05 with the floored short-side re-ask (website_review_script now states a minimum word count on every short re-ask and DEGRADES a draw that still ships below the band). Armed on the integrator's instruction as the acceptance gate for the incident where a 50s order delivered ~15s: disarmed, this scenario's only length assertions were 15s/30s floors, which that film's class passes. This entry is nightly:false (dispatch-only), so a red here is a red on a run somebody chose to launch. If it reds on a draw the stage itself recorded as short, that is the product defect, not the instrument -- do not disarm it to clear the run."
+      },
+      {
+        "stage": "website_review_compile",
+        "path": "artifact_url",
+        "type": "declared_vs_measured",
+        "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+      }
+    ],
+  "expect_terminal_status": [
+    "completed"
+  ],
+  "expect_stage_assertions": [
+    {
+      "stage": "website_critique",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "summary"
+        }
+      ]
+    },
+    {
+      "stage": "website_review_script",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "numeric_gte",
+          "path": "total_seconds",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "stage": "website_review_compile",
+      "status": "completed",
+      "checks": [
+        {
+          "type": "nonempty",
+          "path": "artifact_url"
+        },
+        {"_doc": "AUDIO PTS GAPS, armed 2026-10-06. `mastering.audio_pts_gap_count` is the compiler's own count of holes in the delivered audio stream's PTS (the +24ms-per-join AAC dropout class). ASSERTED == 0 via `numeric_abs_lte` value 0: abs(count) <= 0 is count == 0, and that evaluator FAILS on an absent, null or non-numeric value (an unmeasured count is not a count of zero) -- `equals` would str-compare and misread 0.0. The four entries after it are RECORDED only, never asserted: `mastering.true_peak_dbtp`, `mastering.master_loudness_correction_db` (null = no correction ran), and `loudness.silence_ratio` -- which lives on `loudness`, NOT `mastering`, and is null both when silencedetect printed nothing and when there was no silence, so it cannot carry an assertion.", "type": "numeric_abs_lte", "path": "mastering.audio_pts_gap_count", "value": 0},
+        {"type": "record", "path": "mastering.audio_pts_gap_count"},
+        {"type": "record", "path": "mastering.true_peak_dbtp"},
+        {"type": "record", "path": "mastering.master_loudness_correction_db"},
+        {"type": "record", "path": "loudness.silence_ratio"},
+        {
+          "type": "numeric_gte",
+          "path": "duration_seconds",
+          "value": 15
+        }
+      ]
+    }
+  ]
+}

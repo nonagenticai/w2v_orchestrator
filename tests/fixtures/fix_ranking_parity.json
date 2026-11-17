@@ -1,0 +1,1304 @@
+{
+  "cases": [
+    {
+      "name": "single-proposal-no-findings",
+      "input": {
+        "proposals": [
+          {
+            "title": "Improve checkout accessibility",
+            "category": "general",
+            "impact": "high",
+            "complexity": "moderate",
+            "estimated_effort": "3 days",
+            "description": "Add ARIA labels and focus states to the checkout flow.",
+            "rationale": "Accessible checkout increases conversion for assistive-tech users.",
+            "id": 1
+          }
+        ],
+        "critique_findings": [],
+        "output_cost_per_million_usd": 15
+      },
+      "ranked": [
+        {
+          "proposal": {
+            "title": "Improve checkout accessibility",
+            "category": "general",
+            "impact": "high",
+            "complexity": "moderate",
+            "estimated_effort": "3 days",
+            "description": "Add ARIA labels and focus states to the checkout flow.",
+            "rationale": "Accessible checkout increases conversion for assistive-tech users.",
+            "id": 1
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 1,
+          "redesignEffortDays": 3,
+          "redesignEffortScore": 0.15,
+          "estimatedOutputTokens": 90000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 1.3499999999999999,
+          "roiScore": 2.01,
+          "priorityLabel": "Best ROI"
+        }
+      ],
+      "confidence": {
+        "level": "weak",
+        "score": 0.30000000000000004,
+        "summary": "Ranking signal is weak: treat ordering as provisional and review supporting evidence.",
+        "uncertaintySignals": [
+          "Only one proposal is available, so rank confidence is limited.",
+          "No critique findings were available; severity fallback was used."
+        ],
+        "proposalCount": 1,
+        "findingCount": 0,
+        "severityDiversity": 0,
+        "matchedProposalRatio": 0,
+        "roiSpread": 0
+      }
+    },
+    {
+      "name": "many-proposals-no-findings-varied",
+      "input": {
+        "proposals": [
+          {
+            "title": "Redesign navigation header",
+            "category": "general",
+            "impact": "critical",
+            "complexity": "complex",
+            "estimated_effort": "2 weeks",
+            "description": "Rebuild the navigation header with a responsive mega menu.",
+            "rationale": "Navigation confusion is the top drop-off point.",
+            "id": 1
+          },
+          {
+            "title": "Compress hero images",
+            "category": "general",
+            "impact": "low",
+            "complexity": "simple",
+            "estimated_effort": "4 hours",
+            "description": "Optimize hero imagery to reduce payload.",
+            "rationale": "Faster loads reduce bounce.",
+            "id": 2
+          },
+          {
+            "title": "Add pricing comparison table",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "5 days",
+            "description": "Introduce a comparison table for pricing tiers.",
+            "rationale": "Clarity on pricing drives upgrades.",
+            "id": 3
+          }
+        ],
+        "critique_findings": [],
+        "output_cost_per_million_usd": 15
+      },
+      "ranked": [
+        {
+          "proposal": {
+            "title": "Compress hero images",
+            "category": "general",
+            "impact": "low",
+            "complexity": "simple",
+            "estimated_effort": "4 hours",
+            "description": "Optimize hero imagery to reduce payload.",
+            "rationale": "Faster loads reduce bounce.",
+            "id": 2
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.35,
+          "redesignEffortDays": 0.5,
+          "redesignEffortScore": 0.1,
+          "estimatedOutputTokens": 12000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 0.18,
+          "roiScore": 4.34,
+          "priorityLabel": "Best ROI"
+        },
+        {
+          "proposal": {
+            "title": "Add pricing comparison table",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "5 days",
+            "description": "Introduce a comparison table for pricing tiers.",
+            "rationale": "Clarity on pricing drives upgrades.",
+            "id": 3
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 5,
+          "redesignEffortScore": 0.25,
+          "estimatedOutputTokens": 150000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 2.25,
+          "roiScore": 1.08,
+          "priorityLabel": "Medium ROI"
+        },
+        {
+          "proposal": {
+            "title": "Redesign navigation header",
+            "category": "general",
+            "impact": "critical",
+            "complexity": "complex",
+            "estimated_effort": "2 weeks",
+            "description": "Rebuild the navigation header with a responsive mega menu.",
+            "rationale": "Navigation confusion is the top drop-off point.",
+            "id": 1
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 1,
+          "redesignEffortDays": 10,
+          "redesignEffortScore": 0.5,
+          "estimatedOutputTokens": 405000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 6.075,
+          "roiScore": 1.04,
+          "priorityLabel": "Medium ROI"
+        }
+      ],
+      "confidence": {
+        "level": "moderate",
+        "score": 0.5,
+        "summary": "Ranking signal is moderate: useful direction, but validate top items manually.",
+        "uncertaintySignals": [
+          "No critique findings were available; severity fallback was used."
+        ],
+        "proposalCount": 3,
+        "findingCount": 0,
+        "severityDiversity": 0,
+        "matchedProposalRatio": 0,
+        "roiSpread": 3.3
+      }
+    },
+    {
+      "name": "matched-proposals-diverse-severities",
+      "input": {
+        "proposals": [
+          {
+            "title": "Fix broken checkout button contrast",
+            "category": "general",
+            "impact": "high",
+            "complexity": "simple",
+            "estimated_effort": "1 day",
+            "description": "Checkout button contrast fails accessibility guidelines.",
+            "rationale": "Contrast failures block colorblind shoppers from checkout.",
+            "id": 1
+          },
+          {
+            "title": "Improve navigation menu structure",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "1 week",
+            "description": "Navigation menu structure confuses first-time visitors.",
+            "rationale": "Clearer navigation reduces confusion and abandonment.",
+            "id": 2
+          },
+          {
+            "title": "Rewrite marketing headline copy",
+            "category": "general",
+            "impact": "low",
+            "complexity": "simple",
+            "estimated_effort": "2 days",
+            "description": "Marketing headline copy is vague and unfocused.",
+            "rationale": "Sharper headline copy improves messaging clarity.",
+            "id": 3
+          }
+        ],
+        "critique_findings": [
+          {
+            "category": "general",
+            "severity": "critical",
+            "title": "Checkout button contrast failure",
+            "description": "Checkout button contrast ratio fails accessibility standards.",
+            "finding_id": "c1",
+            "recommendation": "Increase checkout button contrast to meet guidelines."
+          },
+          {
+            "category": "general",
+            "severity": "medium",
+            "title": "Confusing navigation menu",
+            "description": "Navigation menu structure confuses visitors on arrival.",
+            "finding_id": "c2",
+            "recommendation": "Restructure navigation menu into clearer groups."
+          },
+          {
+            "category": "general",
+            "severity": "low",
+            "title": "Vague marketing headline",
+            "description": "Marketing headline copy lacks focus and clarity.",
+            "finding_id": "c3"
+          },
+          {
+            "category": "general",
+            "severity": "high",
+            "title": "Slow image loading",
+            "description": "Large images delay first contentful paint.",
+            "finding_id": "c4",
+            "recommendation": "Compress and lazy-load imagery."
+          }
+        ],
+        "output_cost_per_million_usd": 15
+      },
+      "ranked": [
+        {
+          "proposal": {
+            "title": "Fix broken checkout button contrast",
+            "category": "general",
+            "impact": "high",
+            "complexity": "simple",
+            "estimated_effort": "1 day",
+            "description": "Checkout button contrast fails accessibility guidelines.",
+            "rationale": "Contrast failures block colorblind shoppers from checkout.",
+            "id": 1
+          },
+          "critiqueSeverity": "critical",
+          "critiqueSeverityScore": 1,
+          "matchedFindingTitle": "Checkout button contrast failure",
+          "videoImpactScore": 1,
+          "redesignEffortDays": 1,
+          "redesignEffortScore": 0.1,
+          "estimatedOutputTokens": 24000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 0.36,
+          "roiScore": 7.04,
+          "priorityLabel": "Best ROI"
+        },
+        {
+          "proposal": {
+            "title": "Rewrite marketing headline copy",
+            "category": "general",
+            "impact": "low",
+            "complexity": "simple",
+            "estimated_effort": "2 days",
+            "description": "Marketing headline copy is vague and unfocused.",
+            "rationale": "Sharper headline copy improves messaging clarity.",
+            "id": 3
+          },
+          "critiqueSeverity": "low",
+          "critiqueSeverityScore": 0.3,
+          "matchedFindingTitle": "Vague marketing headline",
+          "videoImpactScore": 0.35,
+          "redesignEffortDays": 2,
+          "redesignEffortScore": 0.1,
+          "estimatedOutputTokens": 48000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 0.72,
+          "roiScore": 1.51,
+          "priorityLabel": "High ROI"
+        },
+        {
+          "proposal": {
+            "title": "Improve navigation menu structure",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "1 week",
+            "description": "Navigation menu structure confuses first-time visitors.",
+            "rationale": "Clearer navigation reduces confusion and abandonment.",
+            "id": 2
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": "Confusing navigation menu",
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 5,
+          "redesignEffortScore": 0.25,
+          "estimatedOutputTokens": 150000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 2.25,
+          "roiScore": 1.08,
+          "priorityLabel": "Medium ROI"
+        }
+      ],
+      "confidence": {
+        "level": "strong",
+        "score": 1,
+        "summary": "Ranking signal is strong: multiple, diverse findings support this order.",
+        "uncertaintySignals": [],
+        "proposalCount": 3,
+        "findingCount": 4,
+        "severityDiversity": 4,
+        "matchedProposalRatio": 1,
+        "roiSpread": 5.96
+      }
+    },
+    {
+      "name": "unmatched-proposals-average-severity",
+      "input": {
+        "proposals": [
+          {
+            "title": "Introduce dark mode theme",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "1 week",
+            "description": "Provide a dark color scheme toggle.",
+            "rationale": "Dark mode is a frequently requested preference.",
+            "id": 1
+          },
+          {
+            "title": "Add multilingual support",
+            "category": "general",
+            "impact": "high",
+            "complexity": "complex",
+            "estimated_effort": "1 month",
+            "description": "Translate the interface into additional languages.",
+            "rationale": "International reach expands the market.",
+            "id": 2
+          }
+        ],
+        "critique_findings": [
+          {
+            "category": "general",
+            "severity": "high",
+            "title": "Broken footer links",
+            "description": "Several footer hyperlinks return not-found errors.",
+            "finding_id": "x1"
+          },
+          {
+            "category": "general",
+            "severity": "critical",
+            "title": "Missing form validation",
+            "description": "Signup form accepts malformed email addresses silently.",
+            "finding_id": "x2"
+          },
+          {
+            "category": "general",
+            "severity": "low",
+            "title": "Inconsistent button spacing",
+            "description": "Padding around primary buttons varies between screens.",
+            "finding_id": "x3"
+          }
+        ],
+        "output_cost_per_million_usd": 15
+      },
+      "ranked": [
+        {
+          "proposal": {
+            "title": "Introduce dark mode theme",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "1 week",
+            "description": "Provide a dark color scheme toggle.",
+            "rationale": "Dark mode is a frequently requested preference.",
+            "id": 1
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.7000000000000001,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 5,
+          "redesignEffortScore": 0.25,
+          "estimatedOutputTokens": 150000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 2.25,
+          "roiScore": 1.23,
+          "priorityLabel": "Medium ROI"
+        },
+        {
+          "proposal": {
+            "title": "Add multilingual support",
+            "category": "general",
+            "impact": "high",
+            "complexity": "complex",
+            "estimated_effort": "1 month",
+            "description": "Translate the interface into additional languages.",
+            "rationale": "International reach expands the market.",
+            "id": 2
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.7000000000000001,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 1,
+          "redesignEffortDays": 22,
+          "redesignEffortScore": 1.1,
+          "estimatedOutputTokens": 891000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 13.365,
+          "roiScore": 0.73,
+          "priorityLabel": "Lower ROI"
+        }
+      ],
+      "confidence": {
+        "level": "strong",
+        "score": 0.86,
+        "summary": "Ranking signal is strong: multiple, diverse findings support this order.",
+        "uncertaintySignals": [
+          "Few proposals directly matched specific critique findings."
+        ],
+        "proposalCount": 2,
+        "findingCount": 3,
+        "severityDiversity": 3,
+        "matchedProposalRatio": 0,
+        "roiSpread": 0.5
+      }
+    },
+    {
+      "name": "synonym-labels-and-info-severity",
+      "input": {
+        "proposals": [
+          {
+            "title": "Simplify onboarding wizard",
+            "category": "general",
+            "impact": "critical",
+            "complexity": "simple",
+            "estimated_effort": "2 days",
+            "description": "Reduce onboarding wizard steps from seven to three.",
+            "rationale": "Shorter onboarding wizard lifts activation.",
+            "id": 1
+          },
+          {
+            "title": "Refine dashboard analytics widgets",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "6 days",
+            "description": "Refine dashboard analytics widget layout and labels.",
+            "rationale": "Clearer analytics widgets improve comprehension.",
+            "id": 2
+          },
+          {
+            "title": "Overhaul reporting engine",
+            "category": "general",
+            "impact": "high",
+            "complexity": "complex",
+            "estimated_effort": "3 weeks",
+            "description": "Rebuild the reporting engine for custom exports.",
+            "rationale": "Custom reporting is an enterprise blocker.",
+            "id": 3
+          }
+        ],
+        "critique_findings": [
+          {
+            "category": "general",
+            "severity": "info",
+            "title": "Onboarding wizard length",
+            "description": "Onboarding wizard has more steps than necessary.",
+            "finding_id": "i1",
+            "recommendation": "Trim onboarding wizard steps."
+          },
+          {
+            "category": "general",
+            "severity": "info",
+            "title": "Dashboard analytics clutter",
+            "description": "Dashboard analytics widgets feel cluttered.",
+            "finding_id": "i2"
+          }
+        ],
+        "output_cost_per_million_usd": 15
+      },
+      "ranked": [
+        {
+          "proposal": {
+            "title": "Simplify onboarding wizard",
+            "category": "general",
+            "impact": "critical",
+            "complexity": "simple",
+            "estimated_effort": "2 days",
+            "description": "Reduce onboarding wizard steps from seven to three.",
+            "rationale": "Shorter onboarding wizard lifts activation.",
+            "id": 1
+          },
+          "critiqueSeverity": "info",
+          "critiqueSeverityScore": 0.15,
+          "matchedFindingTitle": "Onboarding wizard length",
+          "videoImpactScore": 1,
+          "redesignEffortDays": 2,
+          "redesignEffortScore": 0.1,
+          "estimatedOutputTokens": 48000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 0.72,
+          "roiScore": 2.49,
+          "priorityLabel": "Best ROI"
+        },
+        {
+          "proposal": {
+            "title": "Refine dashboard analytics widgets",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "6 days",
+            "description": "Refine dashboard analytics widget layout and labels.",
+            "rationale": "Clearer analytics widgets improve comprehension.",
+            "id": 2
+          },
+          "critiqueSeverity": "info",
+          "critiqueSeverityScore": 0.15,
+          "matchedFindingTitle": "Dashboard analytics clutter",
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 6,
+          "redesignEffortScore": 0.3,
+          "estimatedOutputTokens": 180000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 2.6999999999999997,
+          "roiScore": 0.64,
+          "priorityLabel": "Lower ROI"
+        },
+        {
+          "proposal": {
+            "title": "Overhaul reporting engine",
+            "category": "general",
+            "impact": "high",
+            "complexity": "complex",
+            "estimated_effort": "3 weeks",
+            "description": "Rebuild the reporting engine for custom exports.",
+            "rationale": "Custom reporting is an enterprise blocker.",
+            "id": 3
+          },
+          "critiqueSeverity": "info",
+          "critiqueSeverityScore": 0.15,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 1,
+          "redesignEffortDays": 15,
+          "redesignEffortScore": 0.75,
+          "estimatedOutputTokens": 607500,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 9.1125,
+          "roiScore": 0.59,
+          "priorityLabel": "Lower ROI"
+        }
+      ],
+      "confidence": {
+        "level": "moderate",
+        "score": 0.6200000000000001,
+        "summary": "Ranking signal is moderate: useful direction, but validate top items manually.",
+        "uncertaintySignals": [
+          "Findings are sparse, which weakens ranking evidence.",
+          "Severity diversity is low, so prioritization contrast is weaker."
+        ],
+        "proposalCount": 3,
+        "findingCount": 2,
+        "severityDiversity": 1,
+        "matchedProposalRatio": 0.6666666666666666,
+        "roiSpread": 1.9000000000000004
+      }
+    },
+    {
+      "name": "effort-format-variety",
+      "input": {
+        "proposals": [
+          {
+            "title": "Hours effort task",
+            "category": "general",
+            "impact": "high",
+            "complexity": "simple",
+            "estimated_effort": "4 hours",
+            "description": "",
+            "rationale": "",
+            "id": 1
+          },
+          {
+            "title": "Day range task",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "2-3 days",
+            "description": "",
+            "rationale": "",
+            "id": 2
+          },
+          {
+            "title": "To range task",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "3 to 5 days",
+            "description": "",
+            "rationale": "",
+            "id": 3
+          },
+          {
+            "title": "Weeks task",
+            "category": "general",
+            "impact": "critical",
+            "complexity": "complex",
+            "estimated_effort": "2 weeks",
+            "description": "",
+            "rationale": "",
+            "id": 4
+          },
+          {
+            "title": "Month task",
+            "category": "general",
+            "impact": "high",
+            "complexity": "complex",
+            "estimated_effort": "1 month",
+            "description": "",
+            "rationale": "",
+            "id": 5
+          },
+          {
+            "title": "Empty effort task",
+            "category": "general",
+            "impact": "low",
+            "complexity": "high",
+            "estimated_effort": "",
+            "description": "",
+            "rationale": "",
+            "id": 6
+          },
+          {
+            "title": "Garbage effort task",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "low",
+            "estimated_effort": "lots of work",
+            "description": "",
+            "rationale": "",
+            "id": 7
+          },
+          {
+            "title": "Half day task",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "medium",
+            "estimated_effort": "0.5 day",
+            "description": "",
+            "rationale": "",
+            "id": 8
+          },
+          {
+            "title": "Big number days",
+            "category": "general",
+            "impact": "high",
+            "complexity": "high",
+            "estimated_effort": "90 days",
+            "description": "",
+            "rationale": "",
+            "id": 9
+          },
+          {
+            "title": "Bare number",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "7",
+            "description": "",
+            "rationale": "",
+            "id": 10
+          }
+        ],
+        "critique_findings": [],
+        "output_cost_per_million_usd": 15
+      },
+      "ranked": [
+        {
+          "proposal": {
+            "title": "Hours effort task",
+            "category": "general",
+            "impact": "high",
+            "complexity": "simple",
+            "estimated_effort": "4 hours",
+            "description": "",
+            "rationale": "",
+            "id": 1
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 1,
+          "redesignEffortDays": 0.5,
+          "redesignEffortScore": 0.1,
+          "estimatedOutputTokens": 12000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 0.18,
+          "roiScore": 7.1,
+          "priorityLabel": "Best ROI"
+        },
+        {
+          "proposal": {
+            "title": "Half day task",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "medium",
+            "estimated_effort": "0.5 day",
+            "description": "",
+            "rationale": "",
+            "id": 8
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 0.5,
+          "redesignEffortScore": 0.1,
+          "estimatedOutputTokens": 15000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 0.22499999999999998,
+          "roiScore": 5.17,
+          "priorityLabel": "Best ROI"
+        },
+        {
+          "proposal": {
+            "title": "Garbage effort task",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "low",
+            "estimated_effort": "lots of work",
+            "description": "",
+            "rationale": "",
+            "id": 7
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 2,
+          "redesignEffortScore": 0.1,
+          "estimatedOutputTokens": 48000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 0.72,
+          "roiScore": 2.78,
+          "priorityLabel": "Best ROI"
+        },
+        {
+          "proposal": {
+            "title": "Day range task",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "2-3 days",
+            "description": "",
+            "rationale": "",
+            "id": 2
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 2.5,
+          "redesignEffortScore": 0.125,
+          "estimatedOutputTokens": 75000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 1.125,
+          "roiScore": 1.9,
+          "priorityLabel": "Best ROI"
+        },
+        {
+          "proposal": {
+            "title": "To range task",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "3 to 5 days",
+            "description": "",
+            "rationale": "",
+            "id": 3
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 4,
+          "redesignEffortScore": 0.2,
+          "estimatedOutputTokens": 120000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 1.7999999999999998,
+          "roiScore": 1.19,
+          "priorityLabel": "Medium ROI"
+        },
+        {
+          "proposal": {
+            "title": "Weeks task",
+            "category": "general",
+            "impact": "critical",
+            "complexity": "complex",
+            "estimated_effort": "2 weeks",
+            "description": "",
+            "rationale": "",
+            "id": 4
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 1,
+          "redesignEffortDays": 10,
+          "redesignEffortScore": 0.5,
+          "estimatedOutputTokens": 405000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 6.075,
+          "roiScore": 1.04,
+          "priorityLabel": "Medium ROI"
+        },
+        {
+          "proposal": {
+            "title": "Bare number",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "7",
+            "description": "",
+            "rationale": "",
+            "id": 10
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 7,
+          "redesignEffortScore": 0.35,
+          "estimatedOutputTokens": 210000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 3.15,
+          "roiScore": 0.96,
+          "priorityLabel": "Medium ROI"
+        },
+        {
+          "proposal": {
+            "title": "Month task",
+            "category": "general",
+            "impact": "high",
+            "complexity": "complex",
+            "estimated_effort": "1 month",
+            "description": "",
+            "rationale": "",
+            "id": 5
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 1,
+          "redesignEffortDays": 22,
+          "redesignEffortScore": 1.1,
+          "estimatedOutputTokens": 891000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 13.365,
+          "roiScore": 0.66,
+          "priorityLabel": "Lower ROI"
+        },
+        {
+          "proposal": {
+            "title": "Big number days",
+            "category": "general",
+            "impact": "high",
+            "complexity": "high",
+            "estimated_effort": "90 days",
+            "description": "",
+            "rationale": "",
+            "id": 9
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 1,
+          "redesignEffortDays": 60,
+          "redesignEffortScore": 1.25,
+          "estimatedOutputTokens": 2430000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 36.45,
+          "roiScore": 0.6,
+          "priorityLabel": "Lower ROI"
+        },
+        {
+          "proposal": {
+            "title": "Empty effort task",
+            "category": "general",
+            "impact": "low",
+            "complexity": "high",
+            "estimated_effort": "",
+            "description": "",
+            "rationale": "",
+            "id": 6
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.35,
+          "redesignEffortDays": 15,
+          "redesignEffortScore": 0.75,
+          "estimatedOutputTokens": 607500,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 9.1125,
+          "roiScore": 0.51,
+          "priorityLabel": "Lower ROI"
+        }
+      ],
+      "confidence": {
+        "level": "moderate",
+        "score": 0.5,
+        "summary": "Ranking signal is moderate: useful direction, but validate top items manually.",
+        "uncertaintySignals": [
+          "No critique findings were available; severity fallback was used."
+        ],
+        "proposalCount": 10,
+        "findingCount": 0,
+        "severityDiversity": 0,
+        "matchedProposalRatio": 0,
+        "roiSpread": 6.59
+      }
+    },
+    {
+      "name": "single-proposal-with-findings",
+      "input": {
+        "proposals": [
+          {
+            "title": "Fix accessibility contrast issues",
+            "category": "general",
+            "impact": "high",
+            "complexity": "moderate",
+            "estimated_effort": "4 days",
+            "description": "Resolve accessibility contrast issues across primary pages.",
+            "rationale": "Accessibility contrast issues exclude low-vision users.",
+            "id": 1
+          }
+        ],
+        "critique_findings": [
+          {
+            "category": "general",
+            "severity": "critical",
+            "title": "Accessibility contrast issues",
+            "description": "Multiple accessibility contrast issues detected sitewide.",
+            "finding_id": "s1",
+            "recommendation": "Adjust palette to fix accessibility contrast issues."
+          },
+          {
+            "category": "general",
+            "severity": "medium",
+            "title": "Unlabeled icons",
+            "description": "Icon buttons lack descriptive labels.",
+            "finding_id": "s2"
+          }
+        ],
+        "output_cost_per_million_usd": 15
+      },
+      "ranked": [
+        {
+          "proposal": {
+            "title": "Fix accessibility contrast issues",
+            "category": "general",
+            "impact": "high",
+            "complexity": "moderate",
+            "estimated_effort": "4 days",
+            "description": "Resolve accessibility contrast issues across primary pages.",
+            "rationale": "Accessibility contrast issues exclude low-vision users.",
+            "id": 1
+          },
+          "critiqueSeverity": "critical",
+          "critiqueSeverityScore": 1,
+          "matchedFindingTitle": "Accessibility contrast issues",
+          "videoImpactScore": 1,
+          "redesignEffortDays": 4,
+          "redesignEffortScore": 0.2,
+          "estimatedOutputTokens": 120000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 1.7999999999999998,
+          "roiScore": 2,
+          "priorityLabel": "Best ROI"
+        }
+      ],
+      "confidence": {
+        "level": "moderate",
+        "score": 0.6000000000000001,
+        "summary": "Ranking signal is moderate: useful direction, but validate top items manually.",
+        "uncertaintySignals": [
+          "Only one proposal is available, so rank confidence is limited.",
+          "Findings are sparse, which weakens ranking evidence."
+        ],
+        "proposalCount": 1,
+        "findingCount": 2,
+        "severityDiversity": 2,
+        "matchedProposalRatio": 1,
+        "roiSpread": 0
+      }
+    },
+    {
+      "name": "tight-roi-spread-same-severity",
+      "input": {
+        "proposals": [
+          {
+            "title": "Tweak spacing tokens alpha",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "5 days",
+            "description": "Adjust spacing tokens across components alpha.",
+            "rationale": "Consistent spacing tokens improve polish alpha.",
+            "id": 1
+          },
+          {
+            "title": "Tweak spacing tokens beta",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "5 days",
+            "description": "Adjust spacing tokens across components beta.",
+            "rationale": "Consistent spacing tokens improve polish beta.",
+            "id": 2
+          },
+          {
+            "title": "Tweak spacing tokens gamma",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "5 days",
+            "description": "Adjust spacing tokens across components gamma.",
+            "rationale": "Consistent spacing tokens improve polish gamma.",
+            "id": 3
+          }
+        ],
+        "critique_findings": [
+          {
+            "category": "general",
+            "severity": "medium",
+            "title": "Spacing inconsistency",
+            "description": "Spacing between cards is inconsistent.",
+            "finding_id": "t1"
+          },
+          {
+            "category": "general",
+            "severity": "medium",
+            "title": "Padding drift",
+            "description": "Padding drifts between similar components.",
+            "finding_id": "t2"
+          },
+          {
+            "category": "general",
+            "severity": "medium",
+            "title": "Margin mismatch",
+            "description": "Margins mismatch across the layout.",
+            "finding_id": "t3"
+          }
+        ],
+        "output_cost_per_million_usd": 15
+      },
+      "ranked": [
+        {
+          "proposal": {
+            "title": "Tweak spacing tokens alpha",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "5 days",
+            "description": "Adjust spacing tokens across components alpha.",
+            "rationale": "Consistent spacing tokens improve polish alpha.",
+            "id": 1
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 5,
+          "redesignEffortScore": 0.25,
+          "estimatedOutputTokens": 150000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 2.25,
+          "roiScore": 1.08,
+          "priorityLabel": "Medium ROI"
+        },
+        {
+          "proposal": {
+            "title": "Tweak spacing tokens beta",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "5 days",
+            "description": "Adjust spacing tokens across components beta.",
+            "rationale": "Consistent spacing tokens improve polish beta.",
+            "id": 2
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 5,
+          "redesignEffortScore": 0.25,
+          "estimatedOutputTokens": 150000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 2.25,
+          "roiScore": 1.08,
+          "priorityLabel": "Medium ROI"
+        },
+        {
+          "proposal": {
+            "title": "Tweak spacing tokens gamma",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "moderate",
+            "estimated_effort": "5 days",
+            "description": "Adjust spacing tokens across components gamma.",
+            "rationale": "Consistent spacing tokens improve polish gamma.",
+            "id": 3
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 5,
+          "redesignEffortScore": 0.25,
+          "estimatedOutputTokens": 150000,
+          "outputCostPerMillionUsd": 15,
+          "estimatedTokenCostUsd": 2.25,
+          "roiScore": 1.08,
+          "priorityLabel": "Medium ROI"
+        }
+      ],
+      "confidence": {
+        "level": "moderate",
+        "score": 0.52,
+        "summary": "Ranking signal is moderate: useful direction, but validate top items manually.",
+        "uncertaintySignals": [
+          "Severity diversity is low, so prioritization contrast is weaker.",
+          "Few proposals directly matched specific critique findings.",
+          "ROI scores are tightly clustered, making order less stable."
+        ],
+        "proposalCount": 3,
+        "findingCount": 3,
+        "severityDiversity": 1,
+        "matchedProposalRatio": 0,
+        "roiSpread": 0
+      }
+    },
+    {
+      "name": "custom-output-cost",
+      "input": {
+        "proposals": [
+          {
+            "title": "Add server-side rendering",
+            "category": "general",
+            "impact": "high",
+            "complexity": "complex",
+            "estimated_effort": "2 weeks",
+            "description": "Introduce server-side rendering for landing pages.",
+            "rationale": "Server-side rendering improves SEO and speed.",
+            "id": 1
+          },
+          {
+            "title": "Cache API responses",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "simple",
+            "estimated_effort": "3 days",
+            "description": "Cache frequent API responses at the edge.",
+            "rationale": "Caching reduces latency and cost.",
+            "id": 2
+          }
+        ],
+        "critique_findings": [
+          {
+            "category": "general",
+            "severity": "high",
+            "title": "Slow server rendering",
+            "description": "Landing pages render slowly without server-side rendering.",
+            "finding_id": "o1",
+            "recommendation": "Adopt server-side rendering."
+          },
+          {
+            "category": "general",
+            "severity": "low",
+            "title": "Repeated API calls",
+            "description": "Identical API responses are refetched repeatedly.",
+            "finding_id": "o2"
+          }
+        ],
+        "output_cost_per_million_usd": 30
+      },
+      "ranked": [
+        {
+          "proposal": {
+            "title": "Cache API responses",
+            "category": "general",
+            "impact": "medium",
+            "complexity": "simple",
+            "estimated_effort": "3 days",
+            "description": "Cache frequent API responses at the edge.",
+            "rationale": "Caching reduces latency and cost.",
+            "id": 2
+          },
+          "critiqueSeverity": "medium",
+          "critiqueSeverityScore": 0.55,
+          "matchedFindingTitle": null,
+          "videoImpactScore": 0.65,
+          "redesignEffortDays": 3,
+          "redesignEffortScore": 0.15,
+          "estimatedOutputTokens": 72000,
+          "outputCostPerMillionUsd": 30,
+          "estimatedTokenCostUsd": 2.1599999999999997,
+          "roiScore": 1.24,
+          "priorityLabel": "Medium ROI"
+        },
+        {
+          "proposal": {
+            "title": "Add server-side rendering",
+            "category": "general",
+            "impact": "high",
+            "complexity": "complex",
+            "estimated_effort": "2 weeks",
+            "description": "Introduce server-side rendering for landing pages.",
+            "rationale": "Server-side rendering improves SEO and speed.",
+            "id": 1
+          },
+          "critiqueSeverity": "high",
+          "critiqueSeverityScore": 0.8,
+          "matchedFindingTitle": "Slow server rendering",
+          "videoImpactScore": 1,
+          "redesignEffortDays": 10,
+          "redesignEffortScore": 0.5,
+          "estimatedOutputTokens": 405000,
+          "outputCostPerMillionUsd": 30,
+          "estimatedTokenCostUsd": 12.15,
+          "roiScore": 1.23,
+          "priorityLabel": "Medium ROI"
+        }
+      ],
+      "confidence": {
+        "level": "moderate",
+        "score": 0.64,
+        "summary": "Ranking signal is moderate: useful direction, but validate top items manually.",
+        "uncertaintySignals": [
+          "Findings are sparse, which weakens ranking evidence.",
+          "ROI scores are tightly clustered, making order less stable."
+        ],
+        "proposalCount": 2,
+        "findingCount": 2,
+        "severityDiversity": 2,
+        "matchedProposalRatio": 0.5,
+        "roiSpread": 0.010000000000000009
+      }
+    },
+    {
+      "name": "empty-proposals",
+      "input": {
+        "proposals": [],
+        "critique_findings": [
+          {
+            "category": "general",
+            "severity": "high",
+            "title": "Some finding",
+            "description": "A finding without any proposals.",
+            "finding_id": "e1"
+          }
+        ],
+        "output_cost_per_million_usd": 15
+      },
+      "ranked": [],
+      "confidence": {
+        "level": "weak",
+        "score": 0.4200000000000001,
+        "summary": "Ranking signal is weak: treat ordering as provisional and review supporting evidence.",
+        "uncertaintySignals": [
+          "Only one proposal is available, so rank confidence is limited.",
+          "Findings are sparse, which weakens ranking evidence.",
+          "Severity diversity is low, so prioritization contrast is weaker."
+        ],
+        "proposalCount": 0,
+        "findingCount": 1,
+        "severityDiversity": 1,
+        "matchedProposalRatio": 0,
+        "roiSpread": 0
+      }
+    }
+  ]
+}

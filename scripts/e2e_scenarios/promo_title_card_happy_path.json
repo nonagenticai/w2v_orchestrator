@@ -1,0 +1,88 @@
+{
+  "_doc": "Live guard for the opt-in animated intro/outro title card (compile-tail injection). A full deterministic-shotlist promo run to `completed` with run.config_overrides.title_card enabled — the compile tail (CompileStageBase.handle) renders an animated_title_card clip per side via video_production_service and splices them at the front/back of the shot list. The shotlist is slide-only (no LLM script, no site_capture); cards are sized 30s each at fps:8 (240 frames/card — fast to frame-step, ~60s of card total) against a ~10-15s narration body. The check `promo_render.duration_seconds numeric_gte 50` passes ONLY if BOTH cards actually rendered and were spliced (body alone is ~15s; one card ~45s) — a soft-failed/omitted card (the design's degrade path) drops ~30s and trips the threshold, so a green `completed` alone would not catch a regression where the card silently fell out. captions_mode:none keeps the compile light.",
+  "project": {
+    "type": "promo",
+    "title": "e2e-promo-title-card",
+    "brief": {
+      "angle": "growth",
+      "audience": "B2B SaaS founders",
+      "target_duration_seconds": 20,
+      "shotlist": [
+        {"kind": "slide", "narration": "Churn is quietly killing your MRR.", "slide": {"template": "title", "title": "The churn problem"}},
+        {"kind": "slide", "narration": "Three moves cut it twenty percent.", "slide": {"template": "bullets", "title": "Three moves", "bullets": ["Onboard fast", "Catch risk early", "Win back"]}},
+        {"kind": "slide", "narration": "Get the playbook today.", "slide": {"template": "cta", "title": "Get the playbook", "cta_url": "https://example.com/"}}
+      ]
+    },
+    "brand": {"font": "Inter", "name": "Acme", "secondary_color": "#1F6FEB"},
+    "voice": {"descriptor": "confident, crisp, founder-to-founder", "model_preference": "qwen3-coder-30b"},
+    "theme": {"background": "#0B0E14", "accent": "#1F6FEB"},
+    "deliverables": [
+      {"name": "16x9 hero", "format": "16x9", "captions_mode": "none", "target_duration_seconds": 20}
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": {
+      "title_card": {"enabled": true, "intro": true, "outro": true, "duration_seconds": 30, "fps": 8}
+    }
+  },
+    "_pixel_doc": "Media ACCEPTANCE probes on the delivered master (scripts/e2e_validate.py _MEDIA_CHECKS). Before these, this scenario proved a url was a non-blank string and nothing about the bytes behind it. `artifact_reachable` proves the object downloads and decodes; `audio_present` proves an audio stream exists AND is not digital silence (ffmpeg volumedetect mean/peak dBFS); `resolution` reads the ENCODED width/height, not the number the stage reports about itself; `stream_durations` measures the VIDEO and AUDIO stream durations SEPARATELY and never the container -- a container duration is the MAX over its streams, so it can never refute a truncated video track. Floors are the ones this scenario's existing green assertions already prove, never new tuning numbers.\n\n`duration_within_tolerance` is present but DISARMED (`\"enabled\": false`). It compares the delivered stream length against `ordered_seconds` at the SAME +/-10% the pipeline's own duration_conformance uses. Flip `enabled` to true to arm it -- deliberately not armed while the duration calibration work is in flight, because a red instrument on known-in-flight work teaches people to ignore the instrument.\n\n⚠️ `ordered_seconds` CORRECTED 20 -> 80 on 2026-09-11 — ARITHMETIC from this file's own values, not tuning. 20 was simply `brief.target_duration_seconds`, which orders the NARRATION BODY ONLY. This scenario's whole point is the compile-tail splice: `run.config_overrides.title_card` sets `intro: true`, `outro: true`, `duration_seconds: 30`, so the DELIVERED master is body + intro card + outro card = 20 + 30 + 30 = 80s. Against 20 the check was guaranteed to read roughly +300% the day anyone flipped `enabled` — a check that cannot pass is not a disarmed check, it is a landmine. Note the two independent bands this file now carries and why they disagree: `stream_durations.min_video_seconds: 50` is the BOTH-CARDS-PRESENT detector documented in `_floor_purpose_gates` below (body ~15s, body+one card ~45s, so 50 catches a silently dropped card) and it MUST NOT be touched; `duration_within_tolerance` is the conformance instrument and needs the full ORDERED total, hence 80. Still DISARMED (`\"enabled\": false`) — arming waits on a measured band for this type, exactly as tests/scripts/test_e2e_media_probes.py insists.",
+    "expect_pixel_checks": [
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "artifact_reachable",
+        "min_bytes": 4096
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "audio_present",
+        "true_peak_ceiling_dbtp": 0.0
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "resolution",
+        "min_width": 1280,
+        "min_height": 720,
+        "aspect": "16x9"
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "stream_durations",
+        "require_audio": true,
+        "min_audio_seconds": 25,
+        "require_video": true,
+        "min_video_seconds": 50
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "duration_within_tolerance",
+        "enabled": false,
+        "ordered_seconds": 80
+      },
+      {
+        "stage": "promo_render",
+        "path": "artifact_url",
+        "type": "declared_vs_measured",
+        "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+      }
+    ],
+  "expect_terminal_status": ["completed"],
+  "_floor_purpose_gates": {
+    "promo_render.duration_seconds": "PURPOSE GATE, not a pacing floor \u2014 and deliberately ABOVE the ordered duration. This scenario splices two 30s title cards onto the compile TAIL (run.config_overrides.title_card intro+outro), so the rendered film is the ~15s narration body PLUS ~60s of card, while brief.target_duration_seconds (20s) orders only the body. 50 is therefore a BOTH-CARDS-PRESENT detector, exactly as the _doc above explains: body alone is ~15s and one card is ~45s, so a soft-failed or omitted card (the design's degrade path) drops ~30s and trips it where a green `completed` would not. The ordered-fraction ceiling in tests/test_e2e_scenario_contracts.py compares a floor against the order and that premise does not hold here; recorded 2026-09-03 when that guard first flagged it."
+  },
+  "expect_stage_assertions": [
+    {
+      "stage": "promo_render",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "artifact_url"},
+        {"type": "numeric_gte", "path": "duration_seconds", "value": 50}
+      ]
+    }
+  ]
+}

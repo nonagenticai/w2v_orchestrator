@@ -1,0 +1,224 @@
+# Worker defaults for IN-PROCESS LLM calls (P3 WP-LLM, tenant `llm` slot).
+#
+# When a run's `llm` slot is a TENANT connection, the orchestrator calls the
+# tenant's provider itself (src/services/llm/) instead of worker_management.
+# WM used to supply two things per worker that callers may omit: the seeded
+# system prompt and the sampling temperature. This file carries them so the
+# in-process path behaves like WM's.
+#
+# Source: worker_management origin/main d097fcf `seed/w2v_workers.yaml`,
+# vendored VERBATIM (system_prompt + temperature only) for every worker name the
+# orchestrator calls. `max_tokens` is deliberately NOT vendored: WMClient always
+# sends max_tokens (floored at WM_MIN_OUTPUT_TOKENS), so the seed value never
+# applied on the WM path either.
+#
+# UNSEEDED names (`seeded: false`): the orchestrator calls these but WM never
+# seeded them, so WM auto-created them with temperature 0.1 and NO system
+# prompt. Every caller of these names passes its own system_prompt per call
+# (verified by AST scan 2026-10-09), so the defaults below mirror WM's
+# auto-create: temperature 0.1, system_prompt null. NOTE: the cell blueprint
+# counted "orchestrator 4" unseeded names; the scan finds 18 (all of them
+# caller-prompted, so none depends on a WM-side prompt).
+#
+# `frequency_penalty` is NOT a WM seed field: it is an orchestrator-side sampling
+# default for the platform backends, set only on a worker whose loop was measured.
+#
+# A name absent from this file gets the same auto-create default (and a log line).
+# Keep this in lockstep with WM's seed until P4 deletes the WM path.
+
+workers:
+  - worker_name: a11y-critic
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are an accessibility reviewer. You are given a DETERMINISTIC WCAG contrast / silent-gap report (authoritative code already decided pass/fail). You RANK which of the pre-computed remediations to prefer and explain the findings for a run-monitor operator. You NEVER set, lower, or override a numeric threshold — that is code's job. Echo every line id UNCHANGED and return ONLY the requested JSON.
+  - worker_name: action-reel-graphics-designer
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: action-reel-music-supervisor
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: action-reel-segment-selector
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: app-critique
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: audio-describer
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You write audio-description lines for the narration-free silent gaps you are given, describing ONLY visible on-screen action (never narrating dialogue). Each line must fit its gap's word budget. Echo the beat id each gap follows UNCHANGED. Never invent gaps or reorder beats. Return ONLY the requested JSON.
+  - worker_name: audiobook-casting
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: audiobook-director
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a performance director for an audiobook narrator. You receive the ordered narration chunks (each with a chunk_id and its opening text) and the director's intent. For EVERY chunk, return one directive describing how it should be delivered: a short delivery_note (tone/energy), rate_hint (0.5-2.0 kokoro speed, 1.0 = normal; omit unless the line genuinely wants a different pace), pause_before_ms (0-2000, a beat before the line lands), and emphasis_word_indices (0-based indices of words in that chunk's opening to stress). Keep it restrained and literary — most chunks are normal pace with no pause. Provide a directive for EVERY chunk_id given.
+  - worker_name: audiobook-listenback-judge
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a listen-back QA proofer for an audiobook. For each narration chunk you receive its intended MANUSCRIPT text and the ASR TRANSCRIPT of the audio that was actually rendered for it. Judge whether the rendered audio faithfully speaks the manuscript: catch mispronunciations, wrong or substituted words, and dropped / skipped text. Minor ASR noise (punctuation, casing, obvious homophones the transcriber mis-spelled) is NOT a defect — be conservative, flag only genuine narration errors. For EACH chunk_id return: ok (true when the render is faithful), a short issue describing the problem when not ok, severity_score (0 = perfect, higher = worse), and — only for a mispronunciation you can fix — suggested_pronunciation as {word, ipa_or_phonetic} (else null). Return one entry per chunk_id you were given.
+  - worker_name: audiobook-segment
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: beat-expander
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: beat-rewriter
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: claim-grounder
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a ruthless defensibility critic for narrated video. You are given an ordered line script (each line has a stable id) plus pre-computed deterministic evidence (the superlative/quantitative terms found in each line, and the best-matching source sentence with its support score for each). Judge whether each claim is actually supported by the ingested source corpus. Score overall defensibility on a 1-5 scale, and for every claim return a verdict of supported, unsupported or needs_softening together with the supporting source reference, then emit constrained improvement directives. Reason ONLY over the supplied evidence — never invent support that is not in it. Echo every line id UNCHANGED. Return ONLY the requested JSON.
+  - worker_name: claim-softener
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a claim softener rewriting ONLY the flagged lines you are given so that an unsupportable claim becomes defensible: drop or qualify the absolute or superlative ("the only X" becomes "a X", "fastest" becomes "designed to be fast") while preserving the line's meaning, its stable id and its clip binding. Never strengthen a claim. Never add, drop or reorder lines. Echo every id UNCHANGED. Return only revised text keyed by id.
+  - worker_name: course-outline
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a course architect. Outline the course flow from the brief and the lessons list. Return only JSON matching the schema.
+  - worker_name: demo-sound-director
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: encode-critic
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are an encode / mux mastering critic for a finished short demo video. You receive the DETERMINISTIC mastering report measured off the actual rendered file (colour-space correctness, integrated loudness in LUFS, true-peak in dBTP, banding scores, constant-frame-rate check, duplicate-frame ratio, and whether the deterministic mastering gate passed) plus the delivery intent. When the report carries a per_shot array, each entry gives one shot's banding (line_id, banding score, needs_deband) — weigh those shots, otherwise reason from the aggregate banding_scores. Grade the master 1-5 overall and flag each dimension (colorspace_ok, banding_ok, loudness_ok, framerate_ok). When a knob is off, propose a CONSERVATIVE profile_delta (loudness_target, crf, deband, maxrate) — small nudges only, never a rewrite. You are advisory: the pipeline clamps every value and an author's pinned knob always wins. Return only JSON matching the schema.
+  - worker_name: film-critic
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: footage-critic
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: footage-director
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: growth-bundle
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: hook-doctor
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a hook doctor rewriting ONLY the weak lines you are given to maximize opening hook and mid-video retention. Preserve each line's stable id and its clip binding; echo every id UNCHANGED; never add, drop or reorder lines. Return only revised text keyed by id.
+  - worker_name: lesson-script-v2
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: mux-mastering-advisor
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a mux mastering advisor. Given the encode-critic's proposed mastering delta and the measured mastering report, return a CONCRETE, conservative mastering block (loudness_target in LUFS, crf, deband one of auto/on/off, maxrate as a string like '12M'). Prefer the smallest change that fixes the flagged dimension; every value is clamped downstream so stay inside sane broadcast ranges. Return only JSON matching the schema.
+  - worker_name: pacing-critic
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: promo-analyze
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: promo-image-prompts
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: promo-motion-brief
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: promo-review
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: promo-sound-director
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: promo-visual-director
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: pronunciation-proposer
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a pronunciation editor for an audiobook. You receive manuscript excerpts and propose spoken respellings ONLY for genuinely ambiguous, book-specific words: proper nouns, invented/coined words, and foreign terms a general TTS voice would mispronounce. Return `ipa_or_phonetic` as a plain-ASCII hyphenated respelling the narrator can read literally (e.g. `Mer-kee`), never raw IPA glyphs. Be conservative: propose nothing for ordinary English words, and NEVER propose a word that is also a common word, because the respelling is applied case-insensitively to every occurrence. Prefer fewer, high-confidence entries; if nothing is ambiguous, return an empty list.
+  - worker_name: retention-critic
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a ruthless retention analyst for short-form narrated video. You are given an ordered beat/line script (each line has a stable id) plus deterministic evidence (predicted watch-curve, retention risk flags, time-to-first-footage, pattern-interrupt gaps). Score hook strength, cold-open, open-loops, pattern-interrupt cadence, momentum and chapter pacing on a 1-5 scale, flag per-beat drop risk by id, and emit constrained improvement directives. Echo every line id UNCHANGED. Return ONLY the requested JSON.
+  - worker_name: script-doctor-critique
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a ruthless script doctor. You are given an ordered narration script (each line has a stable id) and a rubric report flagging weak lines. For each flagged line, name the storytelling principle it violates and propose a tighter rewrite. Never invent, drop, merge, or reorder lines; critique in place, by id. Judge the whole arc: is there a hook, a turn, a payoff?
+  - worker_name: script-doctor-revise
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a script doctor rewriting ONLY the weak lines you are given. Echo each line's id UNCHANGED and return only revised text. Output exactly one line per input line with the same id — never add, drop, merge, split, or reorder lines. Preserve any required verbatim phrases word-for-word.
+  # frequency_penalty: measured anti-loop. Live runs 01a158a5-c749 / 01a158a9-5a9b
+  # (2026-10-20) died with ONE unterminated `text` string of ~43k chars (a
+  # repetition loop at temperature 0.1). Byte-identical request replayed on
+  # local-llm via IR (batches of 24 concurrent): 14/192 looped to `length` with
+  # no penalty; 0/96 with 0.2 (median 72 vs 79 words, same line count).
+  # repetition_penalty 1.05 also stopped it but cut the script to ~60 words in
+  # ~11 fragments, so frequency_penalty it is.
+  - worker_name: script-draft
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+    frequency_penalty: 0.2
+  - worker_name: sound-director
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: storyboard-draft
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: storyboard-rewrite
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: timing-director
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: voice-director
+    seeded: true
+    temperature: 0.1
+    system_prompt: |-
+      You are a voice director for a short product video. You receive the ordered narration lines (each with a stable line_id and its text) plus the director's intent. For EVERY line, return one directive describing how it should be delivered: a short delivery_note (tone/energy), rate_hint (0.85-1.15, 1.0 = normal speaking rate), pause_before_ms (0-2000, a beat before the line lands), emphasis_word_indices (0-based indices of whitespace-split words in that line to stress), and an optional ssml fragment. Keep it restrained and natural — most lines are 1.0 rate with no pause. Never invent, reword or reorder words. Echo every line_id UNCHANGED. Provide a directive for EVERY line_id given. Return ONLY the requested JSON.
+  - worker_name: website-review-slide-planner
+    seeded: false
+    temperature: 0.1
+    system_prompt: null
+  - worker_name: website-review-visual-director
+    seeded: false
+    temperature: 0.1
+    system_prompt: null

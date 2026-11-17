@@ -1,0 +1,46 @@
+url: https://dev.specralabs.com
+site_name: "Specra"
+
+# crawler@specralabs.com is a Keycloak service account with skip_otp=true attribute.
+# It uses the "Browser without OTP" conditional flow — no email OTP prompt on login.
+auth:
+  type: form
+  login_url: https://dev.specralabs.com
+  username: crawler@specralabs.com
+  password: "Crawler_Specra_2026!"  # pragma: allowlist secret
+
+crawl:
+  max_depth: 3
+  max_pages: 40
+  javascript_enabled: true
+  screenshot: true
+  timeout_seconds: 30.0
+  exclude_patterns:
+    - "/api/"
+    - "/admin/"
+    - "/auth/"
+
+generator:
+  tool: claude
+  parallel_workers: 4
+  timeout_seconds: 300
+
+recording:
+  viewport_width: 1920
+  viewport_height: 1080
+  slow_mo_ms: 400
+  color_scheme: light
+
+video:
+  output_path: output/specra-demo.mp4
+  format: mp4
+  crf: 18
+  transition_type: crossfade
+  title_card_duration_s: 5.0
+
+theme:
+  name: specra
+  primary_color: "#6366f1"
+  background_color: "#0f172a"
+  text_color: "#f8fafc"
+  accent_color: "#818cf8"

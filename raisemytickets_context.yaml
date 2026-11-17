@@ -1,0 +1,37 @@
+description: |
+  RaiseMyTickets is a ticket management platform that handles ticket creation,
+  retrieval, and management across multiple ticketing systems including Jira,
+  ServiceNow, and Zendesk. It features a clean architecture with FastAPI endpoints,
+  service layer for business logic, and integration adapters for external systems.
+  The Core App Service provides a RESTful API for creating, retrieving, updating,
+  and canceling tickets. Built with Python 3.9+, Poetry, and deployable via Docker
+  with microservice architecture including port management and multi-service orchestration.
+
+site_type: saas
+
+target_audience: >
+  IT teams, support managers, and helpdesk operators who need unified ticket
+  management across Jira, ServiceNow, and Zendesk
+
+goals:
+  - Showcase the unified ticket creation workflow across multiple systems
+  - Demonstrate how one API handles Jira, ServiceNow, and Zendesk integration
+  - Highlight the clean RESTful API with Swagger documentation
+  - Show the microservice architecture and Docker deployment capability
+
+feature_priorities:
+  ticket_creation: high
+  multi_system_integration: high
+  api_documentation: high
+  docker_deployment: medium
+  port_management: low
+
+narration_guidance: >
+  Focus on the value proposition: one platform to manage tickets across all your
+  ticketing systems. Emphasize simplicity, integration breadth, and developer-friendly
+  API. Keep it professional and promotional.
+
+visual_preferences:
+  aspect_ratio: "16:9"
+  resolution: "1920x1080"
+  transitions: smooth

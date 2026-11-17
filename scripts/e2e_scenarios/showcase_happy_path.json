@@ -1,0 +1,172 @@
+{
+  "_doc": "showcase in GENERATED mode. Authored mode is not usable here: ShowcaseBrief._authored_coherence (api/schemas/projects.py:139-143) rejects brief.lines without brief.package_url, and this repo hosts no package to point at — so an authored scenario would need an asset that does not exist. Generated mode drives the same gen/record/narrate/compile chain as demo-video-full-chain-todomvc against the same target, plus the showcase-only `showcase_slides` stage. script_doctor is the blueprint's ONLY pause gate and it is opt-in — with no script_doctor block it raises StageSkippedError, and dag_executor:395 only trips a gate on a NON-skipped stage, so pause_after_stages stays empty. CORRECTED 2026-08-24: this doc used to argue for asserting showcase_slides[] non-empty. In generated mode that is unsatisfiable \u2014 see the _doc on the showcase_slides assertion below.",
+  "project": {
+    "type": "showcase",
+    "title": "e2e-showcase",
+    "brief": {
+      "target_url": "https://demo.playwright.dev/todomvc",
+      "focus_areas": ["add a new todo item", "mark a todo as completed"]
+    },
+    "deliverables": [
+      {
+        "name": "Showcase film",
+        "format": "16x9",
+        "captions_mode": "none",
+        "target_duration_seconds": 30
+      }
+    ]
+  },
+  "_deliverables_doc": "target_duration_seconds ADDED 2026-09-11. Before this, the deliverable ordered NO length at all: demo_video_ordered_seconds (duration_conformance.py:268-288) checks direction.timing.target_seconds then deliverable.target_duration_seconds with NO blueprint fallback (deliberately, unlike promo/lesson/review), so demo_video_encode_master's observe_duration_conformance call got ordered_seconds=None and recorded duration_conformance: null on a live showcase_v1 run — invisible to any within_tolerance=false query. 30 is not a guess: this scenario drives the IDENTICAL target_url + focus_areas (https://demo.playwright.dev/todomvc, [\"add a new todo item\", \"mark a todo as completed\"]) as demo_video_full_chain_todomvc.json, whose own _doc records a MEASURED 2026-08-23 result for this exact target+focus_areas pair — 60s was unreachable (5 scenarios x 5.45s/beat measured yield = 27.26s, a 45.4% hard-fail), so that fixture was lowered to 30s, just above what TodoMVC with these two focus areas actually affords. Showcase reuses demo_video's own gen/record/narrate/compile chain against the same target, so the same yield ceiling applies; 30 is the number this app already proved it can hit, not one invented for this file.",
+  "run": {"pause_after_stages": [], "config_overrides": {}},
+  "expect_subtitles": {"burned": false, "soft_track": false},
+  "_subtitles_doc": "ADDED 2026-10-07. The deliverable stores captions_mode=none and the brief has no captions_only, so the owner default holds: nothing burned into the picture AND no soft track muxed. Printed as E2E_SUBTITLES; burned is derived from config_snapshot (ffprobe cannot see burned pixels).",
+  "expect_terminal_status": ["completed"],
+  "_terminal_doc": "TIGHTENED 2026-09-05: was [\"completed\", \"degraded\"]. `degraded` is NOT a run status — src/api/schemas/_shared.py:61 defines RunStatus = Literal[\"pending\",\"running\",\"paused\",\"completed\",\"failed\",\"cancelled\"], and degradation is surfaced as a separate BOOLEAN on the summary/stage response (api/routes/runs/_shared.py::_stage_response sets response.degraded from a completed stage's notes[]). scripts/e2e_validate.py never reads that flag; it only tests run.status against this list. So \"degraded\" here was a DEAD string that could never match — removing it narrows nothing and stops the spec claiming a tolerance it never had.",
+  "_pixel_doc": "ADDED 2026-09-11. Media ACCEPTANCE probes on the DELIVERED master (scripts/e2e_validate.py `_MEDIA_CHECKS`). Before these, the strongest produced-output assertion in this whole spec was `nonempty artifact_url` on demo_video_compile — a non-blank STRING, and nothing at all about the bytes behind it. A master that was entirely black, entirely silent, or one second long satisfied every assertion here and went green, on one of the 16 types in the proof pass.\n\nSTAGE CHOICE — `demo_video_encode_master`, NOT `demo_video_compile`. The blueprint declares `terminal_artifact_stage=\"demo_video_compile\"` (blueprints/showcase.py:54), but that names the CUT a timeline reorder must re-run, not the file the customer receives: two soft post-compile loops sit after it — `demo_video_footage_critique` (:229, depends_on demo_video_compile) may re-render a better video, and `demo_video_encode_master` (:247, depends_on demo_video_footage_critique) may re-master it. The line that settles it is the EncodeMasterOutput contract, stages/demo_video/encode_master.py:234-239: \"`artifact_url` is ALWAYS a usable artifact: the UNCHANGED compile/footage-critique artifact when the stage is disabled or soft-degrades, or the re-compiled artifact when a guarded re-master fired. `final_critique` + `render_manifest` PREFER this stage's `artifact_url`\". So encode_master is the last stage that always emits, and what it emits is what ships — `produces_required = True` (:253), so it can never be empty, and it never raises StageSkippedError (no such raise exists in the module), which matters because `_pixel_stages_ready` requires the named stage to be `completed`. Probing compile instead would assert an INTERMEDIATE file and could pass on a master that a later re-master broke. It is also the stage production observed writing the `duration_conformance` row for showcase_v1 (see `_deliverables_doc`). Same placement as the proven sibling demo_video_full_chain.json, which runs the same gen/record/narrate/compile chain and attaches its probes to demo_video_encode_master.\n\nWHAT EACH ONE BUYS: `artifact_reachable` proves the object downloads and decodes at all; `audio_present` proves an audio stream EXISTS and is not digital silence (ffmpeg volumedetect mean/peak dBFS), which is the narration this whole film is; `resolution` reads the ENCODED width/height rather than a number a stage reports about itself; `stream_durations` measures the VIDEO and AUDIO stream lengths SEPARATELY and never the container — a container duration is the MAX over its streams, so it can never refute a truncated video track; `declared_vs_measured` exists because a header can claim a duration the packets do not support (an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture — every header-reading assertion, `stream_durations` included, read that same lie and passed). No thresholds are pinned on `declared_vs_measured` on purpose: it is presence-armed, not `\"enabled\"`-gated, and its tolerance lives once in scripts/e2e_validate.py.\n\nFLOORS are deliberately empty-render detectors, not pacing gates. The order is 30s (see `_deliverables_doc`) and the measured yield for this exact target_url + focus_areas pair is ~27s, so video >= 10s / audio >= 5s have ~2.7x headroom while still failing closed on a one-second stub. RESOLUTION floors, not pins: the deliverable orders `format: \"16x9\"` and this scenario sets NO `config_overrides.resolution`, so `quality_tier` (stages/shared/motion_slides.py:86-97) takes `_DEFAULT_TIER = \"2k\"` and `format_dims` renders 2560x1440. Pinning 2560x1440 would go red the day the default tier moves, so the check asserts the floor every legal tier clears (1080p=1920x1080, 2k=2560x1440, 4k=3840x2160) plus the ORDERED 16x9 aspect — which is the property the deliverable actually specifies.\n\n`duration_within_tolerance` is present but DISARMED (`\"enabled\": false`), carrying the ordered 30s so the number is recorded where the check lives. Every scenario in the corpus keeps it disarmed and a guard test enforces that corpus-wide; arming it here would turn the branch red. Flip it only when the duration-calibration work lands fleet-wide.",
+  "expect_pixel_checks": [
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "artifact_reachable",
+      "min_bytes": 4096
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "audio_present",
+      "true_peak_ceiling_dbtp": 0.0
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "resolution",
+      "min_width": 1280,
+      "min_height": 720,
+      "aspect": "16x9"
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "stream_durations",
+      "require_video": true,
+      "require_audio": true,
+      "min_video_seconds": 15,
+      "min_audio_seconds": 15, "max_stream_skew_seconds": 0.5
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "duration_within_tolerance",
+      "enabled": true,
+      "ordered_seconds": 30,
+      "tolerance_fraction": 0.10,
+      "_band_measurement": "MEASURED 2026-09-17/18 against THIS exact scenario (showcase_v1, 30s order, https://demo.playwright.dev/todomvc): n=3 real runs -- kb3 37.30s (124.3% of order, an FTR timeout left an untrimmed frozen tail baked into clip-1), kb4 32.90s (109.7%, in band), kb5 30.01s (100.04%, in band). +/-10% correctly separates the known-bad run (kb3) from the known-good one (kb5), and kb4 lands just inside it. Unlike demo_video/44s (see w2v-demo-video-duration-is-a-quantum-not-an-estimator memory), showcase_v1 renders from directly-recorded clip lengths reconciled to VO rate, not a fixed beat-count selection, so it is not subject to the beat-quantum non-monotonicity documented there.",
+      "_arming_doc": "ARMED 2026-09-18, superseding the `_pixel_doc` note above that called this DISARMED-by-corpus-convention. That convention still holds for demo_video's `expect_pixel_checks` (44s order) -- see demo_video_full_chain_todomvc.json, deliberately left disarmed -- because demo_video's beat-count selection is a proven non-monotonic quantum (a correct estimator cannot land >=7/11 in band). showcase_v1 has no such beat-quantum step and this scenario's own n=3 sample above lands inside a 10% band for 2 of 3 runs including the exact known-good reference (kb5), so arming here is the measured exception, not a widening of the convention."
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "declared_vs_measured",
+      "_doc": "Header-vs-packets guard on the delivered master. THE incident: an mp4 whose `moov` declared 12.0s over data that demuxed to 2.84s of picture. Every header-reading duration assertion reads that same claim -- in the recorded case `stream_durations` even saw a 0.00s A/V skew, because both numbers came from the one lying mux -- so a master whose picture stopped 9s early passed all of them. This is the only check that compares the DECLARED duration against the duration that actually demuxes (packet count / avg_frame_rate), which is what makes the disagreement visible. No thresholds are pinned here on purpose: the tolerance lives once, in scripts/e2e_validate.py."
+    },
+    {
+      "stage": "demo_video_encode_master",
+      "path": "artifact_url",
+      "type": "master_audio_spec",
+      "lufs_target": -14.0,
+      "lufs_tolerance": 1.0,
+      "true_peak_ceiling_dbtp": -1.0,
+      "expect_colour": "bt709",
+      "_doc": "ADDED 2026-09-18. Independent ffmpeg ebur128 + ffprobe colour measurement on the DOWNLOADED master -- never the pipeline's own self-reported `mastering.integrated_lufs`/`true_peak_dbtp` fields, same 'measure, don't trust the claim' principle as declared_vs_measured. Calibration: kb3/kb4/kb5 (real acceptance runs, 2026-09-17/18) all measured -14.2/-14.2/-14.3 LUFS and -1.2/-1.2/-1.0 dBTP true peak via this exact ffmpeg invocation, all bt709 -- so on THIS corpus the audio spec is not what distinguishes kb3 (known-bad on duration/URL-leak/frozen-tail) from kb5; it is a hard floor against a DIFFERENT defect class (a mastering regression) that these three runs happen not to exercise. Hard-gated per owner instruction (unambiguous thresholds, ITU-R BS.1770 standard target), proven against a synthesized fixture pair in tests/scripts/test_e2e_media_probes.py since no real film in this corpus currently fails it."
+    },
+    {
+      "stage": "demo_video_narrate",
+      "path": "clips[].artifact_url",
+      "type": "narration_no_clipping",
+      "each": true,
+      "floor_dbfs": -0.5,
+      "_doc": "ADDED 2026-09-18. Sample-peak floor on EVERY narration wav (not just the first -- `each: true`), reusing the same volumedetect ffmpeg call `audio_present` already trusts for sample peak. Calibration: kb3/kb4/kb5's 9 real narration wavs all measured between -25 and -81 dBFS peak, nowhere near 0 dBFS -- clipping is not the defect these three runs exercise either (see master_audio_spec above), so this is proven against a synthesized clipped-wav fixture, not a real film. Hard-gated per owner instruction."
+    }
+  ],
+  "expect_stage_assertions": [
+    {
+      "_doc": "NO nonempty check on `slides`, and that is a deliberate, measured coverage GAP rather than an oversight. Branded cards come ONLY from `brief.lines` entries carrying a `card` block (stages/demo_video/slides.py::_card_shots); a GENERATED-mode brief authors no lines, so `handle` takes its `if not card_shots: return ShowcaseSlidesOutput(slides=[])` early return and the deck is empty BY CONSTRUCTION. Proven on run 01a03063-32b6-75ff-ac13-f809aa6431db: every stage `completed`, showcase_slides resolved `[]`, and the run was still correct. The original assertion here reasoned that 'the cards are the whole point of showcase over demo_video' — true, but that property is only reachable in AUTHORED mode, which this scenario cannot use (ShowcaseBrief._authored_coherence rejects brief.lines without brief.package_url, and no such package asset exists). So the check asserted something the chosen mode can never satisfy. ⚠️ Do NOT re-add it here — it will fail every run. To actually cover 'a regression silently rendered zero branded cards', an authored-mode scenario needs a hosted package_url asset FIRST.",
+      "stage": "showcase_slides",
+      "status": "completed"
+    },
+    {
+      "_doc": "ADDED 2026-09-05. Before this, the ONLY produced-output assertion in this whole spec was compile.artifact_url, and showcase_slides carried `status: completed` with NO checks — so a showcase that generated nothing but still emitted a container URL was green. These four stages are the same gen/record/narrate/compile chain demo_video_full_chain_todomvc asserts against the SAME target (https://demo.playwright.dev/todomvc, same two focus_areas) — see blueprints/showcase.py lines 57/162/168/210 for the stage names, which are literally `demo_video_gen` / `demo_video_narrate` / `demo_video_record` / `demo_video_compile`. Field paths are the ones that twin already proves live: `lines[].id`/`lines[].text` (DemoVideoGenOutput, stages/demo_video/gen.py:363), `clips[].line_id`/`clips[].video_url` and `clips[].artifact_url` (the record/narrate outputs the twin asserts). The lines floor is 2, not 1: gen.py::_scenarios_for_target's own measured note records FIVE generated scenarios for a two-focus_area TodoMVC run (E2E run 01a03011), so 2 has 2.5x headroom while still failing a half-empty spine. The clips floor stays 1 (a recorder may legitimately drop a scenario) — it is the ZERO case this exists to catch.",
+      "stage": "demo_video_gen",
+      "status": "completed",
+      "checks": [
+        {"type": "distinct_count_gte", "path": "lines[].id", "value": 2},
+        {"type": "nonempty", "path": "lines[].text"}
+      ]
+    },
+    {
+      "stage": "demo_video_record",
+      "status": "completed",
+      "checks": [
+        {"type": "distinct_count_gte", "path": "clips[].line_id", "value": 1},
+        {"type": "nonempty", "path": "clips[].video_url"}
+      ]
+    },
+    {
+      "stage": "demo_video_narrate",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "clips[].artifact_url"},
+        {
+          "_doc": "ADDED 2026-09-18. No DELIVERED narration line may play slower than natural pace (speed < 1.0) -- the `0.97` drag floor that used to cap how far a line could be dragged was removed in #1045 (orch), so there is no longer any downstream protection against an arbitrarily slow line. Calibration: kb4 (real run, 2026-09-17) materialized clips[2].speed == 0.97 on this exact stage/path and trips this; kb5 (known-good, 2026-09-18) has all three clip speeds >= 1.0 and passes. Hard-gated per owner instruction.",
+          "type": "numeric_all_gte",
+          "path": "clips[].speed",
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "_doc": "ADDED 2026-09-18, covers TWO checks against the reconciled per-line plan (the value that fixes each line's target delivery speed and final narration text BEFORE render). Path is `lines[].vo_rate`, NOT `timeline_manifest.beats[].vo_rate` -- `timeline_manifest` is `null` on 2 of our 3 real runs (kb4, kb5), which would make an all_gte check over its beats resolve EMPTY and, by this check type's absent-is-a-failure rule, wrongly red kb5 too; `lines[].vo_rate` is populated on all 3. (1) no PLANNED line may target a drag below natural pace either -- kb3 AND kb4 (real runs, 2026-09-17) both planned lines[2].vo_rate == 0.97, and kb3's materialized demo_video_narrate.clips[].speed never actually dipped below 1.0 (the drag was absorbed elsewhere downstream), so this plan-level check is the ONLY real-data path that catches kb3's narration-speed defect at all -- a plan-only drag that never reached the render is still a real defect surface now that #1045 removed the downstream floor. kb5's lines[].vo_rate is 1.0/1.0/1.0 and passes. (2) no line's narration TEXT may carry a raw URL/path meant for a screen, not a voice -- kb3's clip-5 text is literally '...located at the URL \"https://demo.playwright.dev/todomvc\".', read aloud verbatim by TTS; kb4/kb5's texts carry no URL and pass. Both hard-gated per owner instruction.",
+      "stage": "reconcile_timeline",
+      "status": "completed",
+      "checks": [
+        {"type": "numeric_all_gte", "path": "lines[].vo_rate", "value": 1.0},
+        {"type": "no_url_or_path", "path": "lines[].text"}
+      ]
+    },
+    {
+      "stage": "demo_video_compile",
+      "status": "completed",
+      "checks": [
+        {"type": "nonempty", "path": "artifact_url"},
+        {"_doc": "MASTERING VERDICT, added 2026-09-13 (wave 7). The compiler measures a whole verdict block on the real rendered file and emits it on `demo_video_compile.mastering`; until now the harness read NONE of it. Only ONE key is ASSERTED and the ranking is deliberate. `av_gap_seconds` = seconds of delivered NARRATION the delivered PICTURE does not cover, signed (positive = picture short, negative = picture long), which is why it needs `numeric_abs_lte` and not `numeric_gte`. A post-fix master measured -21 MICROseconds; 0.5s is ~24000x that and still less than one spoken clause, so it fails a real A/V desync and cannot fail a healthy master on rounding. An ABSENT value FAILS by design (an unmeasured gap is not a gap of zero). ⛔ NOT ARMED, and why, each one measured: `gate_pass` is false on 136/136 rows; `colorspace_ok` fails 23.3%% of n=136 on a defect fixed hours before this change; `cfr_ok` is ADVISORY by the pipeline's own design and never clears `gate_pass`. Arming any of them produces an instrument that is red by construction, i.e. one everybody learns to ignore. They are RECORDED instead (`record` prints and never fails), so the numbers land in every run log and a band can be derived from real data rather than guessed.", "type": "numeric_abs_lte", "path": "mastering.av_gap_seconds", "value": 0.5},
+        {"type": "record", "path": "mastering.gate_pass"},
+        {"type": "record", "path": "mastering.colorspace_ok"},
+        {"type": "record", "path": "mastering.cfr_ok"},
+        {"type": "record", "path": "mastering.duplicate_frame_ratio"},
+        {"_doc": "AUDIO PTS GAPS, armed 2026-10-06. `mastering.audio_pts_gap_count` is the compiler's own count of holes in the delivered audio stream's PTS (the +24ms-per-join AAC dropout class). ASSERTED == 0 via `numeric_abs_lte` value 0: abs(count) <= 0 is count == 0, and that evaluator FAILS on an absent, null or non-numeric value (an unmeasured count is not a count of zero) -- `equals` would str-compare and misread 0.0. The four entries after it are RECORDED only, never asserted: `mastering.true_peak_dbtp`, `mastering.master_loudness_correction_db` (null = no correction ran), and `loudness.silence_ratio` -- which lives on `loudness`, NOT `mastering`, and is null both when silencedetect printed nothing and when there was no silence, so it cannot carry an assertion.", "type": "numeric_abs_lte", "path": "mastering.audio_pts_gap_count", "value": 0},
+        {"type": "record", "path": "mastering.audio_pts_gap_count"},
+        {"type": "record", "path": "mastering.true_peak_dbtp"},
+        {"type": "record", "path": "mastering.master_loudness_correction_db"},
+        {"type": "record", "path": "loudness.silence_ratio"}
+      ]
+    }
+  ],
+  "expect_advisory_stage_assertions": [
+    {
+      "_doc": "ADDED 2026-09-18. ADVISORY (see `run_happy_path`'s `expect_advisory_stage_assertions` doc) -- a frozen-tail detector, not yet promoted to a hard gate because its ratio/delta thresholds are calibrated from n=1 positive case. Naive ffmpeg freezedetect on the compiled master is VACUOUS here: a screen-recorded UI triggers freeze segments throughout every film at any usable threshold, so it cannot separate this defect from normal footage (see w2v-a-failed-recording-scenario-ships-a-frozen-tail memory). The signal proven to separate them: a clip whose recorded `seconds` is a material outlier against its siblings in the SAME demo_video_record output, with no matching `failed_scenario_footage` trim-degradation naming it (the pipeline's own fix, bdd #166 + orch #1042, emits that degradation when it successfully trims a timeout tail -- its absence next to an outlier duration is the tell). Calibration: kb3 (real run, 2026-09-17) has clip-1=14.56s against siblings 9.88s/9.56s (peer median 9.88s, ratio 1.47 >= 1.3, delta 4.68s >= 3.0s) with ZERO failed_scenario_footage degradations despite 3 FTR timeout notes -- trips. kb5 (known-good, 2026-09-18) has clips at 9.8s/9.28s/10.0s (max ratio 1.08 < 1.3, no outlier at all) -- passes on the outlier test alone, independent of the fact its pipeline ALSO emitted a matching failed_scenario_footage trim record for the one clip an FTR scenario failed against, which is further evidence the mechanism works as designed. kb4 has no FTR failures and no outlier -- passes.",
+      "stage": "demo_video_record",
+      "status": "completed",
+      "checks": [
+        {"type": "clip_duration_outlier_needs_trim_record", "outlier_ratio": 1.3, "min_delta_seconds": 3.0}
+      ]
+    },
+    {
+      "_doc": "ADDED 2026-09-18. ADVISORY, and expected to be RED on every run today -- that is the point, not a bug in this check. `step_coverage.ungrounded_gherkin_concepts` is an instrument this project's own history flagged as silently absent (its absence read as 'clean' rather than 'never measured') in all three calibration films (kb3/kb4/kb5), and a `grep -rn step_coverage src/` over this repo at write time returns ZERO occurrences -- the field is not wired into ANY stage output yet. `type: present` (see `_eval_present`/`_is_present`) is the generic fix for the underlying trap: it treats 0/False/[]/{}/absent identically as 'not real work', so a future author who wires this field to `0` (a legitimate 'nothing ungrounded' measurement) will still pass here, while an author who never wires it at all stays red until they do. Kept advisory (not hard-gated) because the field does not exist yet; promote once it is emitted with a real zero-vs-nonzero distribution to calibrate against.",
+      "stage": "demo_video_gen",
+      "status": "completed",
+      "checks": [
+        {"type": "present", "path": "step_coverage.ungrounded_gherkin_concepts"}
+      ]
+    }
+  ]
+}

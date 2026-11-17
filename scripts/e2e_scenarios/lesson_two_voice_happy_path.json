@@ -1,0 +1,62 @@
+{
+  "_doc": "Two-voice Socratic lesson: lesson_script (dialogue mode) → lesson_slides → lesson_narrate (two distinct kokoro voices) → lesson_record → lesson_compile, run to `completed`. The FIRST live exercise of two-voice lesson narration. Lessons are child-only (a top-level `lesson` project is rejected), so the parent is a minimal course used only as a container: `run_target.child_index:0` makes the validator run the LESSON child's own deliverable instead of the course deliverable, exposing the lesson blueprint's stages to `expect_stage_assertions`. `brief.dialogue.enabled` on the child turns on the Socratic prompt (student asks / instructor answers); the validator's distinct_count check on `lesson_script.paragraphs[].speaker` proves the live LLM + deterministic role re-derivation produced BOTH a student and an instructor turn (green alone would not prove the script went two-voice), and lesson_narrate clips prove the dual-voice synth ran. Per-line voice→speaker mapping is deterministic and covered by unit tests. `config_overrides.ai_image_gen:false` SUPPRESSES the lesson's default per-slide image generation (run_setup adds it for lessons unless an override is present) so this scenario does NOT depend on the GPU image-gen backend (mini1) — ai_image_gen StageSkips, lesson_record renders title+bullets slides without hero images (it is explicitly tolerant of a skipped ai_image_gen), and the run still reaches `completed`. This isolates the two-voice signal from image-gen flakiness; the full lesson render incl. images is covered by course_happy_path. duration_minutes:2 keeps narrate to a handful of TTS calls.\n\nFLOOR PINNED, NOT RE-SIZED (recorded 2026-09-03). `lesson_script paragraphs[].speaker >= 2` looks fragile blueprint-wide -- MEASURED over a 90-day window of completed `stage_outputs` the distinct speaker count is min 0 (n=44) -- but that minimum is single-voice lessons, which do not set dialogue mode and legitimately carry one speaker or none. Here two speakers are pinned by the INPUT: `lessons[0].brief.dialogue.enabled` is true, which is exactly the switch that makes lesson_script emit a two-speaker Socratic script, and the assertion is the proof that switch was honoured. Lowering it would leave the scenario named 'two voice' unable to tell a two-voice lesson from a one-voice one. tests/test_e2e_scenario_contracts.py now requires any `paragraphs[].speaker >= 2` floor to be backed by `dialogue.enabled: true` on the targeted lesson, so silently turning dialogue off reds in CI rather than quietly reddening the nightly.",
+  "project": {
+    "type": "course",
+    "title": "E2E two-voice lesson smoke",
+    "brief": {
+      "audience": "first-time learners",
+      "outcome": "Understand one concept clearly."
+    },
+    "voice": {"descriptor": "calm, clear, teacherly"},
+    "brand": {"font": "Inter"},
+    "theme": {"background": "#0B0E14", "accent": "#1F6FEB"},
+    "deliverables": [
+      {
+        "name": "Course intro",
+        "format": "16x9",
+        "captions_mode": "burned_in",
+        "target_duration_seconds": 60
+      }
+    ],
+    "lessons": [
+      {
+        "title": "Lesson 1 — What is a function?",
+        "brief": {
+          "duration_minutes": 2,
+          "learning_objective": "Explain what a function is in plain terms.",
+          "dialogue": {"enabled": true}
+        },
+        "deliverables": [
+          {
+            "name": "Lesson 1 video",
+            "format": "16x9",
+            "captions_mode": "burned_in",
+            "target_duration_seconds": 120
+          }
+        ]
+      }
+    ]
+  },
+  "run": {
+    "pause_after_stages": [],
+    "config_overrides": { "ai_image_gen": false }
+  },
+  "run_target": {"child_index": 0},
+  "expect_terminal_status": ["completed"],
+  "expect_stage_assertions": [
+    {
+      "stage": "lesson_script",
+      "status": "completed",
+      "checks": [
+        { "type": "distinct_count_gte", "path": "paragraphs[].speaker", "value": 2 }
+      ]
+    },
+    {
+      "stage": "lesson_narrate",
+      "status": "completed",
+      "checks": [
+        { "type": "nonempty", "path": "clips[].artifact_url" }
+      ]
+    }
+  ]
+}
