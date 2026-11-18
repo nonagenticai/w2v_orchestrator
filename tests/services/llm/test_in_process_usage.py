@@ -133,7 +133,13 @@ async def test_tenant_call_resolves_the_pinned_version_and_writes_byo_usage(
 
     assert resp.output == "pinned answer"
     assert fake.bodies[0]["model"] == "claude-v1"
-    assert fake.requests[0].headers["x-api-key"] == SECRET
+    # anthropic>=2 authenticates with `Authorization: Bearer`; 1.x used `x-api-key`.
+    # Assert the tenant's key reaches the wire, whichever header the SDK uses.
+    _req = fake.requests[0]
+    assert (_req.headers.get("authorization") or _req.headers.get("x-api-key")) in (
+        f"Bearer {SECRET}",
+        SECRET,
+    )
 
     rows = (
         (await db_session.execute(select(RunUsage).where(RunUsage.run_id == run_id)))

@@ -291,7 +291,12 @@ async def test_anthropic_slot_uses_its_key_and_model(
 
     (req,) = fake.requests
     assert req.url.host == "api.anthropic.com" and req.url.path == "/v1/messages"
-    assert req.headers["x-api-key"] == SECRET
+    # anthropic>=2 authenticates with `Authorization: Bearer`; 1.x used `x-api-key`.
+    # Assert the slot's key reaches the wire, whichever header the SDK uses.
+    assert (req.headers.get("authorization") or req.headers.get("x-api-key")) in (
+        f"Bearer {SECRET}",
+        SECRET,
+    )
     assert fake.bodies[0]["model"] == "claude-tenant"
     assert "Be kind." in json.dumps(fake.bodies[0]["system"])
     assert resp.output == "hello from claude"
